@@ -25,3 +25,6 @@ results/
 *.egg-info/
 dist/
 build/
+
+# Simulation outputs
+outputs/
