@@ -1,0 +1,22 @@
+# venv
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Outputs
+results/
+*.csv
+*.parquet
+*.feather
+*.pkl
+*.log
+
+# Notebooks
+.ipynb_checkpoints/

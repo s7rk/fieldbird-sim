@@ -1,0 +1,35 @@
+Metadata-Version: 2.4
+Name: fieldbird-sim
+Version: 0.1.0
+Summary: Field bird population simulation (modular port of legacy script)
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: pyyaml
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Provides-Extra: geo
+Requires-Dist: shapely; extra == "geo"
+Requires-Dist: geopandas; extra == "geo"
+Requires-Dist: pyproj; extra == "geo"
+Requires-Dist: pyogrio; extra == "geo"
+Provides-Extra: viz
+Requires-Dist: matplotlib; extra == "viz"
+Provides-Extra: io
+Requires-Dist: pyarrow; extra == "io"
+
+# fieldbird-sim
+
+Field bird population simulation.
+
+## Installation (developer)
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -e ".[dev]"
+
+

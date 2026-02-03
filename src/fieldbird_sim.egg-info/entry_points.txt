@@ -1,0 +1,2 @@
+[console_scripts]
+fieldbird-sim = fieldbird_sim.cli:main
