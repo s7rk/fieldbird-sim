@@ -31,3 +31,13 @@ outputs/
 
 # Simulation outputs
 outputs/
+.DS_Store
+
+__pycache__/
+*.pyc
+
+.DS_Store
+__pycache__/
+*.pyc
+outputs/
+analysis/
