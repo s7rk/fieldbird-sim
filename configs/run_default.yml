@@ -1,0 +1,15 @@
+run:
+  use_synthetic: true
+  n_fields: 10
+  n_years: 20
+  year_to_show: 1
+  day_to_show: 160
+  do_maps: true
+  do_heatmaps: true
+
+seeds:
+  fields: 2025
+  rotation: 2025
+  management: 2025
+  hedges: 2025
+  sim: 2025

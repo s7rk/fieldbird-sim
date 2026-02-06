@@ -1,6 +1,19 @@
 from __future__ import annotations
 
+
+import math
+from types import SimpleNamespace
+from typing import Dict, Optional
+
+import numpy as np
+
 from .globals import *  # noqa: F401,F403
+from .layout import parse_days, parse_window, in_window
+from .habitat import measure_modifiers, food_index, cover_index, softmax
+from .species import clutch_multiplier_for
+
+
+
 
 #  (module 6/7) Simulator with age-cohort juveniles + tidy export
 # =========================================================
@@ -65,7 +78,9 @@ class BirdLandscapeSim:
         self.dist_mat = raw / self._dist_scale_m
 
         self._median_perimeter = float(np.median(self.fields["perimeter"].values))
-        self.K_adults = (self.fields["area"].astype(float).to_numpy() * float(K_PER_HA_ADULTS)).astype(float)
+        # K pro ha: aus globals, sonst Fallback (wie in trash.py / globals.py: 40.0)
+        K_PER_HA_ADULTS_local = float(globals().get("K_PER_HA_ADULTS", 40.0))
+        self.K_adults = (self.fields["area"].astype(float).to_numpy() * K_PER_HA_ADULTS_local).astype(float)
 
         # ---------- optionale Revier-Slots je Feld ----------
         self.territory_slots = self._compute_territory_slots()
@@ -469,7 +484,10 @@ class BirdLandscapeSim:
             A_f_breeding[next_idx, :] = breeding_f.astype(int)
 
             # Soft-Kapazitätslast
-            juv_equiv = float(getattr(self.cfg, "juvenile_equiv_in_capacity", JUV_EQUIV_IN_CAPACITY))
+            # juvenile contribution to capacity: cfg overrides, else globals constant, else fallback
+            JUV_EQUIV_IN_CAPACITY_local = float(globals().get("JUV_EQUIV_IN_CAPACITY", 0.5))
+            juv_equiv = float(getattr(self.cfg, "juvenile_equiv_in_capacity", JUV_EQUIV_IN_CAPACITY_local))
+
             prev_total = (
                 (prev_m + prev_f).astype(float)
                 + juv_equiv * (prev_free + J_age.sum(axis=0)).astype(float)
@@ -760,7 +778,6 @@ class BirdLandscapeSim:
             "daily_fledglings": daily_fledglings.astype(int),
             "N_total": N_total.astype(int),
             "usage": usage,
-            "J_tied_total": J_tied_total.astype(int),
         }
         if keep_age_series and J_age_series is not None:
             res_out["J_age_series"] = J_age_series.astype(int)

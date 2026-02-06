@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import numpy as np
+import pandas as pd
+import geopandas as gpd
+import math
 from .globals import *  # noqa: F401,F403
+from pathlib import Path
+
 
 #  (module 2/7) Parsers, layout, hedges, plots
 # =========================================================
@@ -582,6 +588,23 @@ def rect_or_centroid_layout(fields: pd.DataFrame):
     gdf["area"] = gdf.geometry.area / 10_000.0  # ha
     gdf["perimeter"] = gdf.geometry.length
     return gdf
+
+def _save_fig(path, tight: bool = True, dpi: int = 180, transparent: bool = False) -> None:
+    """
+    Save the current matplotlib figure to `path` and create parent dirs if needed.
+    Kept local to layout.py to avoid circular imports with globals/kpis.
+    """
+    from matplotlib import pyplot as plt
+
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+
+    bbox = "tight" if tight else None
+    pad_inches = 0.1 if tight else 0.0
+
+    fig = plt.gcf()
+    fig.savefig(p, dpi=dpi, bbox_inches=bbox, pad_inches=pad_inches, transparent=transparent)
+    plt.close(fig)
 
 def heatmap(N_mat, field_ids, title, vmax=None, savepath=None):
     """

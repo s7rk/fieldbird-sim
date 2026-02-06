@@ -19,8 +19,6 @@ from __future__ import annotations
 
 # ------------------- Import area -------------------
 
-from __future__ import annotations
-
 # Standard library
 import csv
 import inspect
@@ -76,6 +74,15 @@ OPTS.SEED_MANAGEMENT = _env_int("SEED_MANAGEMENT", OPTS.SEED_MANAGEMENT)
 OPTS.SEED_HEDGES   = _env_int("SEED_HEDGES",   OPTS.SEED_HEDGES)
 OPTS.SIM_RNG_SEED  = _env_int("SIM_SEED",      OPTS.SIM_RNG_SEED)
 
+OPTS.N_FIELDS     = _env_int("N_FIELDS",     OPTS.N_FIELDS)
+OPTS.N_YEARS      = _env_int("N_YEARS",      OPTS.N_YEARS)
+OPTS.YEAR_TO_SHOW = _env_int("YEAR_TO_SHOW", OPTS.YEAR_TO_SHOW)
+OPTS.DAY_TO_SHOW  = _env_int("DAY_TO_SHOW",  OPTS.DAY_TO_SHOW)
+
+# optional:
+DO_MAPS     = bool(int(os.environ.get("DO_MAPS", "1")))
+DO_HEATMAPS = bool(int(os.environ.get("DO_HEATMAPS", "1")))
+
 # (optional) Szenario-spezifische Seeds erlauben, falls genutzt
 try:
     SCENARIO_B_SEED = _env_int("SCENARIO_B_SEED", SCENARIO_B_SEED)
@@ -89,7 +96,7 @@ except NameError:
 # Sanity (früh scheitern statt leise falsche Ergebnisse)
 #assert int(OPTS.N_YEARS) >= 1, "OPTS.N_YEARS muss >= 1 sein"
 
-# === (2) Werte, die aus OPTS abgeleitet werden – NICHT ändern ===
+# === Werte, die aus OPTS abgeleitet werden – NICHT ändern ===
 YEARS_TO_SIM = list(range(1, int(OPTS.N_YEARS) + 1))
 YEAR_TO_SHOW = max(1, min(int(OPTS.YEAR_TO_SHOW), int(OPTS.N_YEARS)))
 DAY_TO_SHOW  = max(1, min(int(OPTS.DAY_TO_SHOW), TOT_DAYS))  # <— clamp auf [1..365]
@@ -97,30 +104,26 @@ SPECIES_LIST = [
     "Feldlerche",
     "Rebhuhn"]  # weitere Arten hier ergänzen (Strings)
 
-# === (3) Plot-Ausgabe (ein/aus) ===
-DO_HEATMAPS = True  # True: pro Jahr Heatmaps schreiben
-DO_MAPS     = True  # True: Karten für YEAR_TO_SHOW erzeugen
-
-# === (4) Feldlayout (synthetische Geometrien) ===
+# === Feldlayout (synthetische Geometrien) ===
 USE_RECT_PACKING   = True   # True: Rechteck-Packlayout; False: einfache Zentroid-Quadrate
 TARGET_ROW_WIDTH_M = None   # None => automatisch aus Feldgrößen ableiten
 
-# === (5) Hecken-Darstellung/Quelle ===
+# === Hecken-Darstellung/Quelle ===
 USE_HEDGES_FROM_CSV = True  # True: Hecken aus CSV (HEDGES_CSV) lesen
 AUTO_HEDGES_FROM_ADJ = False# True: sehr einfache Auto-Nachbarschaft als Hecken
 DRAW_HEDGE_BUFFERS   = True # True: Pufferflächen um Hecken visualisieren
 HEDGE_BUFFER_M       = 5.0  # Pufferbreite in Metern
 
-# === (6) Lerchenfenster/Refugien (tuning, biologisch plausible Defaults) ===
+# === Lerchenfenster/Refugien (tuning, biologisch plausible Defaults) ===
 ELIGIBLE_REFUGE_CROPS = {"Winterweizen", "Sommergerste"}  # Kulturen, in denen Fenster wirken
 REFUGE_ASSIGN_MULT    = 15.0  # Stärke, mit der neue Nester Fenster bevorzugen (vs. reine Flächenquote)
 PULSE_PROTECT_SCALE   = 4.0   # wie stark refuge_share Puls-Störungen abschirmt
 REFUGE_SHARE_CAP      = 0.6   # max. Anteil Nester in Fenstern (Kappung)
 
-# === (7) Rein visuelle Overlays ===
+# === Rein visuelle Overlays ===
 DRAW_FLOWER_RINGS = True  # True: Blühstreifen als Randringe anzeigen
 
-# === (8) Dateipfade (falls reale Inputs; sonst Fallback auf Templates) ===
+# === Dateipfade (falls reale Inputs; sonst Fallback auf Templates) ===
 FIELDS_CSV           = "inputs/fields_template.csv"
 ROTATION_CSV_MAIN    = "inputs/rotation.csv"
 ROTATION_CSV_TPL     = "inputs/rotation_template.csv"
@@ -130,7 +133,7 @@ HEDGES_CSV           = "inputs/hedges_template.csv"
 SKYLARK_WINDOWS_CSV  = Path("configs/skylark_windows.csv")
 CROP_CALENDAR_CSV    = "configs/crop_calendar.csv"
 
-# === (9) Szenarien (Beispiele; werden im Hauptteil angewendet) ===
+# === Szenarien (Beispiele; werden im Hauptteil angewendet) ===
 # A: spätere Ernte (einzelner Wert ODER Liste von Werten in Tagen)
 SCENARIO_A_ENABLED = True
 SCENARIO_A_SHIFTS = [7, 14, 21]   # auch erlaubt: 21  oder  [21]
@@ -410,6 +413,10 @@ def _build_daily_full_df(fields_gdf: pd.DataFrame,
         fledglings  = res.get("daily_fledglings")
         N_total     = res.get("N_total")
 
+        new_nests_c1 = res.get("daily_new_nests_c1")
+        new_nests_c2 = res.get("daily_new_nests_c2")
+        new_nests_c3 = res.get("daily_new_nests_c3")
+
         # Absicherung: N_total berechnen, falls fehlt
         if N_total is None and all(v is not None for v in (A_m, A_f, J_free, J_tied)):
             N_total = (A_m.astype(int) + A_f.astype(int) + J_free.astype(int) + J_tied.astype(int))
@@ -508,6 +515,9 @@ def _build_daily_full_df(fields_gdf: pd.DataFrame,
         J_free_f       = flat(J_free)
         J_tied_f       = flat(J_tied) if J_tied is not None else np.zeros_like(A_f_f)
         new_nests_f    = flat(new_nests) if new_nests is not None else np.zeros_like(A_f_f)
+        new_nests_c1_f = flat(new_nests_c1) if new_nests_c1 is not None else np.zeros_like(A_f_f)
+        new_nests_c2_f = flat(new_nests_c2) if new_nests_c2 is not None else np.zeros_like(A_f_f)
+        new_nests_c3_f = flat(new_nests_c3) if new_nests_c3 is not None else np.zeros_like(A_f_f)
         fledglings_f   = flat(fledglings) if fledglings is not None else np.zeros_like(A_f_f)
         N_total_f      = flat(N_total)
 
@@ -545,6 +555,9 @@ def _build_daily_full_df(fields_gdf: pd.DataFrame,
             "J_free": J_free_f.astype(int),
             "J_tied": J_tied_f.astype(int),
             "new_nests": new_nests_f.astype(int),
+            "new_nests_c1": new_nests_c1_f.astype(int),
+            "new_nests_c2": new_nests_c2_f.astype(int),
+            "new_nests_c3": new_nests_c3_f.astype(int),
             "fledglings": fledglings_f.astype(int),
             "N_total": N_total_f.astype(int),
 
@@ -586,7 +599,7 @@ def _build_daily_full_df(fields_gdf: pd.DataFrame,
     # Ordnung der Spalten exakt fixieren (falls Pandas gemischt hat)
     desired_cols = [
         "year","day","field_id",
-        "A_m","A_f","A_f_breeding","J_free","J_tied","new_nests","fledglings","N_total",
+        "A_m","A_f","A_f_breeding","J_free","J_tied","new_nests","new_nests_c1","new_nests_c2","new_nests_c3","fledglings","N_total",
         "crop","is_harvest_day","is_insecticide_day","is_mowing_day",
         "x","y","area_ha","flower_strip_share","skylark_plots","skylark_plot_area_ha","refuge_share",
         "width_m","height_m","perimeter","doy_sin","doy_cos","in_breeding",
@@ -694,13 +707,17 @@ def _build_daily_full_df(fields_gdf: pd.DataFrame,
 
 def save_run_bundle(outdir, species_name, fields_gdf, rotation, management, hedges_gdf, results_by_year, day_to_show):
     """
-    Saves:
-      - data/: fields_flat.csv, rotation.csv, management.csv, hedges.(geojson|csv)
-      - year_X/arrays/*.npz, year_X/usage.csv, year_X/daily_totals.csv,
-        year_X/repro_log.csv (if res['debug_repro'] present),
-        year_X/debug_daily.csv (if res['debug']['daily'] present)
-      - analysis/fields_layout_realized.csv  (einmalig)
-      - run_meta.json
+    Saves (per run + per species):
+      - outputs/<run_id>/data/:
+          fields_flat.csv, rotation.csv, management.csv, fields.geojson (optional), hedges.csv (optional)
+        (written only once per run, i.e. on first species call)
+      - outputs/<run_id>/<species>/:
+          run_meta.json, birdsim_daily_full.csv,
+          year_X/arrays/*.npz, year_X/usage.csv, year_X/daily_totals.csv,
+          year_X/repro_log.csv (if res['debug_repro'] present),
+          year_X/debug_daily.csv (if res['debug']['daily'] present),
+          analysis/fields_layout_realized.csv
+      - outputs/<run_id>/<species>/plots/ (created)
     """
     outdir = pathlib.Path(outdir)
     try:
@@ -710,42 +727,47 @@ def save_run_bundle(outdir, species_name, fields_gdf, rotation, management, hedg
     parent_name = resolved_outdir.parent.name if resolved_outdir.parent != resolved_outdir else ""
     run_id = parent_name or resolved_outdir.name
 
-    (outdir / "data").mkdir(parents=True, exist_ok=True)
+    # ---------------- Root-level Inputs snapshot (einmal pro Run) ----------------
+    # outdir = outputs/<run_id>/<species>  -> run_root = outputs/<run_id>
+    run_root = outdir.parent
+    root_data_dir = run_root / "data"
+    root_data_dir.mkdir(parents=True, exist_ok=True)
+
+    root_fields_csv = root_data_dir / "fields_flat.csv"
+    root_rotation_csv = root_data_dir / "rotation.csv"
+    root_management_csv = root_data_dir / "management.csv"
+
+    if not root_fields_csv.exists():
+        try:
+            root_fields_flat = fields_gdf.drop(columns=[c for c in ["geometry"] if c in fields_gdf.columns]).copy()
+            root_fields_flat.to_csv(root_fields_csv, index=False)
+            rotation.to_csv(root_rotation_csv, index=False)
+            management.to_csv(root_management_csv, index=False)
+
+            # optional: Geometrie einmal auf Run-Root speichern (breit kompatibel)
+            try:
+                fields_gdf.to_file(root_data_dir / "fields.geojson", driver="GeoJSON")
+            except Exception as e:
+                print("[warn] writing root fields.geojson failed:", e)
+
+            # optional: hedges einmal auf Run-Root speichern (ohne Geometrie)
+            if hedges_gdf is not None and len(hedges_gdf) > 0:
+                try:
+                    hedges_gdf.drop(columns=[c for c in ["geometry"] if c in hedges_gdf.columns]).to_csv(
+                        root_data_dir / "hedges.csv", index=False
+                    )
+                except Exception:
+                    pass
+
+            print(f"[data] root snapshot geschrieben: {root_data_dir}")
+        except Exception as exc:
+            print(f"[warn] root data snapshot failed: {exc}")
+
+    # ---------------- Species-level dirs ----------------
     (outdir / "plots").mkdir(parents=True, exist_ok=True)
 
-    # ---------------- Inputs snapshot ----------------
+    # für Layout-Export (ohne Geometrie)
     fields_flat = fields_gdf.drop(columns=[c for c in ["geometry"] if c in fields_gdf.columns]).copy()
-    (outdir / "data" / "fields_flat.csv").parent.mkdir(parents=True, exist_ok=True)
-    fields_flat.to_csv(outdir / "data" / "fields_flat.csv", index=False)
-    rotation.to_csv(outdir / "data" / "rotation.csv", index=False)
-    management.to_csv(outdir / "data" / "management.csv", index=False)
-
-    # Geometrie: beste Formate versuchen, robust fallen lassen
-    try:
-        fields_gdf.to_file(outdir / "data" / "fields.gpkg", layer="fields", driver="GPKG")
-    except Exception as e:
-        print("[warn] writing fields.gpkg failed:", e)
-
-    try:
-        # Requires geopandas >= 0.14 and pyarrow
-        fields_gdf.to_parquet(outdir / "data" / "fields.parquet")
-    except Exception as e:
-        print("[warn] writing fields.parquet failed:", e)
-
-    # GeoJSON fallback (breit lesbar)
-    try:
-        fields_gdf.to_file(outdir / "data" / "fields.geojson", driver="GeoJSON")
-    except Exception as e:
-        print("[warn] writing fields.geojson failed:", e)
-
-    if hedges_gdf is not None and len(hedges_gdf) > 0:
-        try:
-            hedges_gdf.to_file(outdir / "data" / "hedges.geojson", driver="GeoJSON")
-        except Exception:
-            # Fallback: CSV ohne Geometrie
-            hedges_gdf.drop(columns=[c for c in ["geometry"] if c in hedges_gdf.columns]).to_csv(
-                outdir / "data" / "hedges.csv", index=False
-            )
 
     # ---------------- Metadata ----------------
     # DOY clamp (verhindert Out-of-range)
@@ -771,6 +793,7 @@ def save_run_bundle(outdir, species_name, fields_gdf, rotation, management, hedg
         np.savez_compressed(ydir / "arrays" / "A_m.npz", A_m=res["A_m"])
         np.savez_compressed(ydir / "arrays" / "A_f.npz", A_f=res["A_f"])
         np.savez_compressed(ydir / "arrays" / "J_free.npz", J_free=res["J_free"])
+
         # J_tied_total evtl. legacy-Name absichern:
         J_tied_arr = res.get("J_tied_total", res.get("J_tied"))
         if J_tied_arr is not None:
@@ -800,7 +823,7 @@ def save_run_bundle(outdir, species_name, fields_gdf, rotation, management, hedg
             if isinstance(daily_debug, pd.DataFrame):
                 daily_debug.to_csv(ydir / "debug_daily.csv", index=False)
 
-        # ---------------- BirdSIM daily full export ----------------
+    # ---------------- BirdSIM daily full export (species-level) ----------------
     try:
         daily_full_df = _build_daily_full_df(
             fields_gdf,
@@ -817,12 +840,12 @@ def save_run_bundle(outdir, species_name, fields_gdf, rotation, management, hedg
     except Exception as exc:
         print(f"[warn] daily full export failed: {exc}")
 
-    # ---------------- einmaliger Layout-Export (species-level) ----------------
+    # ---------------- Layout-Export (species-level) ----------------
     analysis_dir = outdir / "analysis"
     analysis_dir.mkdir(parents=True, exist_ok=True)
     try:
+        from .layout import save_fields_layout_csv
         save_fields_layout_csv(fields_flat, analysis_dir, filename="fields_layout_realized.csv")
-        print(f"[layout] gespeichert: {analysis_dir / 'fields_layout_realized.csv'}")
     except Exception as e:
         print(f"[warn] Layout-Export fehlgeschlagen: {e}")
 
@@ -899,6 +922,7 @@ def make_synthetic_fields(n_fields=150, seed=42,
     df["skylark_plot_area"] = skylark_plot_area
 
     # pack into a grid-like layout and compute geometry/perimeter/x/y
+    from .layout import rect_shelf_pack
     gdf = rect_shelf_pack(df, target_row_width=TARGET_ROW_WIDTH_M)
 
     # Falls rect_shelf_pack keine Geometrie setzt: erzeugen
@@ -932,28 +956,29 @@ def make_synthetic_fields(n_fields=150, seed=42,
 
     if cover_parts:
         start_id = int(gdf["field_id"].max()) + 1
-        rows = []
-        geoms = []
-        for k, (poly, src) in enumerate(cover_parts, start=0):
-            minx, miny, maxx, maxy = poly.bounds
-            w = maxx - minx
-            h = maxy - miny
-            rows.append({
-                "field_id": start_id + k,
-                "area": poly.area / 10_000.0,      # ha
-                "width_m": w,
-                "height_m": h,
-                "flower_strip_share": 0.0,
-                "skylark_plots": 0,
-                "skylark_plot_area": 0.0,
-                "x": minx, "y": miny,
-                "perimeter": poly.length,
-                "is_permanent_cover": True,
-                "cover_source": src
-            })
-            geoms.append(poly)
 
-        cover_gdf = gpd.GeoDataFrame(pd.DataFrame(rows), geometry=geoms, crs=gdf.crs)
+        polys = [poly for (poly, _src) in cover_parts]
+        merged = unary_union(polys)
+
+        minx, miny, maxx, maxy = merged.bounds
+        w = maxx - minx
+        h = maxy - miny
+
+        cover_row = {
+            "field_id": start_id,  # <- nur eine ID
+            "area": merged.area / 10_000.0,  # ha
+            "width_m": w,
+            "height_m": h,
+            "flower_strip_share": 0.0,
+            "skylark_plots": 0,
+            "skylark_plot_area": 0.0,
+            "x": minx, "y": miny,
+            "perimeter": merged.length,
+            "is_permanent_cover": True,
+            "cover_source": "merged"  # oder "rim+residual"
+        }
+
+        cover_gdf = gpd.GeoDataFrame(pd.DataFrame([cover_row]), geometry=[merged], crs=gdf.crs)
         gdf = pd.concat([gdf, cover_gdf], ignore_index=True)
 
     # Debug/Monitoring
@@ -1178,6 +1203,69 @@ def make_management(fields_gdf, rotation_df, seed=44,
         })
 
     return pd.DataFrame(rows)
+
+def _read_crop_calendar(path: str) -> dict:
+    """
+    Lies eine Crop-Calendar CSV ein und liefere ein dict:
+        crop_name -> dict mit Management-Infos (z.B. harvest days etc.)
+
+    Erwartet mindestens eine Spalte 'crop' (oder 'Crop').
+    Alle weiteren Spalten werden mit übernommen.
+    Felder mit Tageslisten können z.B. Strings wie "120,121,122" oder "120-125" enthalten.
+    """
+    import os
+    import pandas as pd
+
+    if path is None or str(path).strip() == "":
+        return {}
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Crop calendar CSV not found: {path}")
+
+    df = pd.read_csv(path)
+
+    # crop-Spalte robust finden
+    crop_col = None
+    for c in df.columns:
+        if c.lower().strip() == "crop":
+            crop_col = c
+            break
+    if crop_col is None:
+        raise ValueError(f"Crop calendar CSV must contain a 'crop' column. Got columns: {list(df.columns)}")
+
+    out = {}
+    for _, row in df.iterrows():
+        crop = str(row[crop_col]).strip()
+        if crop == "" or crop.lower() in {"nan", "none"}:
+            continue
+
+        d = {}
+        for c in df.columns:
+            if c == crop_col:
+                continue
+            v = row[c]
+            # NaNs raus
+            try:
+                if pd.isna(v):
+                    continue
+            except Exception:
+                pass
+
+            # Optional: wenn deine Pipeline parse_days erwartet, wandle typische day-list columns um.
+            # Wir machen das nur, wenn parse_days existiert (kommt z.B. aus layout.py).
+            if "day" in c.lower() or "doy" in c.lower():
+                if "parse_days" in globals():
+                    try:
+                        d[c] = parse_days(v)  # type: ignore[name-defined]
+                        continue
+                    except Exception:
+                        pass
+
+            d[c] = v
+
+        out[crop] = d
+
+    return out
 
 
 def make_random_hedges(fields_gdf, p_edge=0.7, seed=45):
@@ -1638,6 +1726,8 @@ def run_years_with_feedback(fields_gdf, rotation, management, cfg,
     Mehrjahreslauf mit Cross-Year-Feedback (ohne Bestands-Booster).
     Speichert juvenile_transition(_qc).csv wenn outdir gesetzt ist.
     """
+    from .simulate import BirdLandscapeSim
+
     sim = BirdLandscapeSim(
         fields_gdf[[
             "field_id","x","y","area","perimeter",
