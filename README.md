@@ -21,13 +21,13 @@ pip install -e ".[dev]"
 
 ## Run the simulation
 
-### Via installed CLI
+### Recommended
 
 ```bash
 fieldbird-sim run --config configs/run_default.yml
 ```
 
-### Via script entry point
+### Optional legacy helper (for debugging old pipeline behavior)
 
 ```bash
 python scripts/run.py
@@ -47,6 +47,18 @@ Main options:
 - `run.year_to_show`
 - `run.day_to_show`
 - `seeds.*`
+
+## Data files in this repository
+
+Included (versioned):
+- `species_Feldlerche.csv`
+- `species_Feldlerche_pref.csv`
+- `species_Rebhuhn.csv`
+- `species_Rebhuhn_pref.csv`
+- `configs/crop_calendar.csv`
+
+Not included by default:
+- `inputs/*.csv` (only needed when using `run.use_synthetic: false`)
 
 ## Development checks
 
