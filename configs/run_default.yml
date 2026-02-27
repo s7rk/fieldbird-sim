@@ -1,11 +1,26 @@
 run:
   use_synthetic: true
   n_fields: 10
-  n_years: 20
+  n_years: 10
   year_to_show: 1
   day_to_show: 160
-  do_maps: true
-  do_heatmaps: true
+
+  species: ["Feldlerche", "Rebhuhn"]
+  n_init_first: 100
+
+  outdir_prefix: "outputs"
+  run_name: null
+
+plots:
+  do_maps: false
+  do_heatmaps: false
+  draw_flower_rings: true
+  draw_hedge_buffers: true
+  hedge_buffer_m: 5.0
+  maps_years: "year_to_show"
+  heatmaps_years: "year_to_show"
+  usage_map: true
+  heatmap_vmax_mode: "global"
 
 seeds:
   fields: 2025
@@ -13,3 +28,79 @@ seeds:
   management: 2025
   hedges: 2025
   sim: 2025
+
+winter:
+  use_year_feedback: true
+  winter_survival_adult: 0.95
+  winter_survival_juvenile: 0.90
+  juvenile_maturation_rate: 0.90
+  juvenile_equiv_in_capacity: 0.5
+  window_stress_weight: 0.5
+  winter_move_radius: 12.0
+  winter_beta: 2.5
+  winter_distance_cost: 0.08
+  winter_eval_days: [330, 20]
+
+capacity:
+  use_capacity_soft: true
+  k_per_ha_adults: 40.0
+  capacity_gamma: 0.4
+
+refuge:
+  eligible_crops: ["Winterweizen", "Sommergerste"]
+  refuge_assign_mult: 15.0
+  pulse_protect_scale: 4.0
+  refuge_share_cap: 0.6
+
+synthetic:
+  target_row_width_m: null
+  cover:
+    add_cover: true
+    cover_margin_m: 6
+    cover_min_patch_m2: 80
+    cover_fill_residual: true
+    square_pad_m: 8
+
+management:
+  use_calendar: true
+  calendar_path: "configs/crop_calendar.csv"
+  desync_region_sd: 4.0
+  desync_field_sd: 3.0
+  region_bins: 6
+
+hedges:
+  p_edge: 0.7
+  from_csv: true
+
+inputs:
+  fields_csv: "inputs/fields.csv"
+  rotation_csv: "inputs/rotation.csv"
+  management_csv: "inputs/management.csv"
+  hedges_csv: "inputs/hedges.csv"
+
+scenarios:
+  A:
+    enabled: false
+    shifts: [7, 14, 21]
+  B:
+    enabled: false
+    shares: [0.10, 0.20, 0.30]
+    fractions: [0.25, 0.50, 1.00]
+    select: "no_flower_first"
+    seed: 2025
+  C:
+    enabled: true
+    fallow_area_shares: [0.01, 0.05, 0.10]
+    apply_years: "all"
+    selection: "best_match"
+    seed: 2026
+  D:
+    enabled: false
+    add_skylark_plots: 2
+    skylark_plot_area: 0.02
+    target_fraction: 0.20
+    min_eligible_years: 1
+    only_without_flower: true
+
+debug:
+  debug_year_xfer: 1

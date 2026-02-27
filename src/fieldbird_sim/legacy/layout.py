@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import math
+import matplotlib
 from .globals import *  # noqa: F401,F403
 from pathlib import Path
 

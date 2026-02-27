@@ -84,6 +84,8 @@ class BirdLandscapeSim:
 
         # ---------- optionale Revier-Slots je Feld ----------
         self.territory_slots = self._compute_territory_slots()
+        ts = self.territory_slots
+        print(f"[territory_slots] {self.cfg.name}: min={ts.min()}, max={ts.max()}, >0={(ts > 0).sum()}/{len(ts)}")
         # ---- schnelle Indizes & Pref-Cache
         self._fid2ix = {int(fid): i for i, fid in enumerate(self.fields["field_id"].astype(int).tolist())}
         self._pref_cache = {
@@ -121,6 +123,10 @@ class BirdLandscapeSim:
 
         if terr_area > 0:
             slots_area = np.floor(area_ha / terr_area)
+        # FAST FIX: wenn terr_area alles auf 0 drückt (weil Felder kleiner als terr_area),
+        # dann erlaube pro Feld maximal 1 Territorium (statt "unendlich").
+        if terr_area > 0 and np.nanmax(slots_area) <= 0:
+            slots_area = (area_ha > 0).astype(float)  # 1 für jedes Feld mit Fläche, sonst 0
         if max_pph > 0:
             slots_pph = np.floor(max_pph * area_ha)
 
@@ -576,10 +582,15 @@ class BirdLandscapeSim:
                 mult_vec = np.ones_like(p_start_vec, dtype=float)
                 if getattr(self.cfg, "clutch_prefs", None):
                     for i in range(len(mult_vec)):
-                        mult_vec[i] = clutch_multiplier_for(
+                        m = clutch_multiplier_for(
                             crops_vec[i], doy=int(doy), clutch_number=int(clutch_idx[i]),
                             prefs_lookup=self.cfg.clutch_prefs
                         )
+                        # --- QUICK FIX ---
+                        if m is None or (isinstance(m, float) and np.isnan(m)) or m <= 0.0:
+                            m = 1.0
+                        mult_vec[i] = float(m)
+
                 p_start_vec = np.clip(p_start_vec * mult_vec, 0.0, 0.9)
 
                 can_start = np.minimum(potential_pairs, remaining_capacity)
