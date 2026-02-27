@@ -1,3 +1,7 @@
+import importlib
+
+
 def test_imports():
-    import fieldbird_sim
-    from fieldbird_sim.legacy import globals, species, habitat, layout, scenarios, simulate, kpis
+    assert importlib.import_module("fieldbird_sim") is not None
+    assert importlib.import_module("fieldbird_sim.cli") is not None
+    assert importlib.import_module("fieldbird_sim.run") is not None
