@@ -162,6 +162,171 @@ class DebugSection:
 
 
 @dataclass(frozen=True)
+class WeatherStressSection:
+    decay: float = 0.95
+    heat_threshold: float = 28.0
+    heat_scale: float = 10.0
+    cold_threshold: float = 5.0
+    cold_scale: float = 10.0
+    wet_threshold: float = 12.0
+    wet_scale: float = 20.0
+    wind_threshold: float = 12.0
+    wind_scale: float = 10.0
+    w_heat: float = 0.25
+    w_cold: float = 0.20
+    w_wet: float = 0.15
+    w_wind: float = 0.10
+    state_clip: float = 5.0
+
+
+@dataclass(frozen=True)
+class WeatherFactorSection:
+    intercept: float = 1.0
+    stress_weight: float = 1.0
+    food_weight: float = 0.0
+    habitat_weight: float = 0.0
+    min: float = 0.2
+    max: float = 1.5
+
+
+@dataclass(frozen=True)
+class WeatherFoodSection:
+    decay: float = 0.90
+    sunshine_threshold_h: float = 4.0
+    sunshine_scale_h: float = 6.0
+    rain_optimal_mm: float = 4.0
+    rain_tolerance_mm: float = 8.0
+    w_sunshine: float = 0.20
+    w_moderate_rain: float = 0.15
+    heat_penalty_weight: float = 0.45
+    wet_penalty_weight: float = 0.40
+    state_clip: float = 5.0
+
+
+@dataclass(frozen=True)
+class WeatherHabitatSection:
+    decay: float = 0.94
+    wetness_optimal_30d_mm: float = 90.0
+    wetness_tolerance_30d_mm: float = 80.0
+    storm_threshold: float = 16.0
+    storm_scale: float = 8.0
+    w_wet_balance: float = 0.20
+    w_stability: float = 0.15
+    storm_penalty_weight: float = 0.45
+    state_clip: float = 5.0
+
+
+@dataclass(frozen=True)
+class WeatherInteractionsSection:
+    drought_threshold_30d_mm: float = 50.0
+    drought_scale_30d_mm: float = 35.0
+    heat_drought_weight: float = 0.35
+    cold_wet_weight: float = 0.20
+    season_mode: str = "window"
+    breeding_start_doy: int = 95
+    breeding_end_doy: int = 205
+    season_strength: float = 0.85
+    add_to_stress_weight: float = 0.60
+    add_to_food_weight: float = 0.25
+    add_to_habitat_weight: float = 0.30
+
+
+@dataclass(frozen=True)
+class WeatherEventTypeSection:
+    enabled: bool = True
+    threshold: float = 0.0
+    min_consecutive_days: int = 1
+    effect_duration_days: int = 1
+    trigger_probability: float = 1.0
+    shock_reproduction_mult: float = 1.0
+    shock_juvenile_survival_mult: float = 1.0
+    shock_adult_survival_mult: float = 1.0
+
+
+@dataclass(frozen=True)
+class WeatherEventsSection:
+    heatwave: WeatherEventTypeSection = WeatherEventTypeSection(
+        threshold=32.0,
+        min_consecutive_days=3,
+        effect_duration_days=4,
+        trigger_probability=1.0,
+        shock_reproduction_mult=0.80,
+        shock_juvenile_survival_mult=0.95,
+        shock_adult_survival_mult=0.99,
+    )
+    heavy_rain: WeatherEventTypeSection = WeatherEventTypeSection(
+        threshold=35.0,
+        min_consecutive_days=1,
+        effect_duration_days=2,
+        trigger_probability=1.0,
+        shock_reproduction_mult=0.88,
+        shock_juvenile_survival_mult=0.96,
+        shock_adult_survival_mult=0.995,
+    )
+    storm: WeatherEventTypeSection = WeatherEventTypeSection(
+        threshold=22.0,
+        min_consecutive_days=1,
+        effect_duration_days=3,
+        trigger_probability=1.0,
+        shock_reproduction_mult=0.85,
+        shock_juvenile_survival_mult=0.94,
+        shock_adult_survival_mult=0.992,
+    )
+    cold_snap: WeatherEventTypeSection = WeatherEventTypeSection(
+        threshold=-2.0,
+        min_consecutive_days=2,
+        effect_duration_days=3,
+        trigger_probability=1.0,
+        shock_reproduction_mult=0.86,
+        shock_juvenile_survival_mult=0.95,
+        shock_adult_survival_mult=0.993,
+    )
+
+
+@dataclass(frozen=True)
+class WeatherFactorsSection:
+    reproduction: WeatherFactorSection = WeatherFactorSection(
+        intercept=0.35,
+        stress_weight=0.75,
+        food_weight=0.25,
+        habitat_weight=0.15,
+        min=0.9,
+        max=1.1,
+    )
+    juvenile_survival: WeatherFactorSection = WeatherFactorSection(
+        intercept=0.35,
+        stress_weight=0.55,
+        food_weight=0.12,
+        habitat_weight=0.1,
+        min=0.97,
+        max=1.03,
+    )
+    adult_survival: WeatherFactorSection = WeatherFactorSection(
+        intercept=0.4,
+        stress_weight=0.45,
+        food_weight=0.08,
+        habitat_weight=0.08,
+        min=0.995,
+        max=1.005,
+    )
+
+
+@dataclass(frozen=True)
+class WeatherModuleSection:
+    enabled: bool = False
+    weather_csv: str = "dwd_hoexter_out/hoexter_kl_final_for_birdsim.csv"
+    seed: int = 42
+    start_date: str | None = None
+    missing_date_policy: str = "raise"
+    stress: WeatherStressSection = WeatherStressSection()
+    food: WeatherFoodSection = WeatherFoodSection()
+    habitat: WeatherHabitatSection = WeatherHabitatSection()
+    interactions: WeatherInteractionsSection = WeatherInteractionsSection()
+    events: WeatherEventsSection = WeatherEventsSection()
+    factors: WeatherFactorsSection = WeatherFactorsSection()
+
+
+@dataclass(frozen=True)
 class RunConfig:
     run: RunSection = RunSection()
     plots: PlotSection = PlotSection()
@@ -175,6 +340,7 @@ class RunConfig:
     hedges: HedgesSection = HedgesSection()      # NEW
     scenarios: ScenariosSection = ScenariosSection()
     debug: DebugSection = DebugSection()
+    weather_module: WeatherModuleSection = WeatherModuleSection()
     raw: dict[str, Any] | None = None
 
 
@@ -212,6 +378,20 @@ def load_run_config(path: Path) -> RunConfig:
     C_d = scenarios_d.get("C") or {}
     D_d = scenarios_d.get("D") or {}
     debug_d = data.get("debug") or {}
+    weather_d = data.get("weather_module") or {}
+    weather_stress_d = weather_d.get("stress") or {}
+    weather_food_d = weather_d.get("food") or {}
+    weather_habitat_d = weather_d.get("habitat") or {}
+    weather_interactions_d = weather_d.get("interactions") or {}
+    weather_events_d = weather_d.get("events") or {}
+    weather_event_heatwave_d = weather_events_d.get("heatwave") or {}
+    weather_event_heavy_rain_d = weather_events_d.get("heavy_rain") or {}
+    weather_event_storm_d = weather_events_d.get("storm") or {}
+    weather_event_cold_snap_d = weather_events_d.get("cold_snap") or {}
+    weather_factors_d = weather_d.get("factors") or {}
+    weather_rep_d = weather_factors_d.get("reproduction") or {}
+    weather_juv_d = weather_factors_d.get("juvenile_survival") or {}
+    weather_adult_d = weather_factors_d.get("adult_survival") or {}
 
     # optional: species list
     sp = _dget(run_d, "species", None)
@@ -329,6 +509,199 @@ def load_run_config(path: Path) -> RunConfig:
         ),
         debug=DebugSection(
             debug_year_xfer=int(_dget(debug_d, "debug_year_xfer", 0)),
+        ),
+        weather_module=WeatherModuleSection(
+            enabled=bool(_dget(weather_d, "enabled", False)),
+            weather_csv=str(
+                _dget(weather_d, "weather_csv", "dwd_hoexter_out/hoexter_kl_final_for_birdsim.csv")
+            ),
+            seed=int(_dget(weather_d, "seed", 42)),
+            start_date=_dget(weather_d, "start_date", None),
+            missing_date_policy=str(_dget(weather_d, "missing_date_policy", "raise")),
+            stress=WeatherStressSection(
+                decay=float(_dget(weather_stress_d, "decay", 0.95)),
+                heat_threshold=float(_dget(weather_stress_d, "heat_threshold", 28.0)),
+                heat_scale=float(_dget(weather_stress_d, "heat_scale", 10.0)),
+                cold_threshold=float(_dget(weather_stress_d, "cold_threshold", 5.0)),
+                cold_scale=float(_dget(weather_stress_d, "cold_scale", 10.0)),
+                wet_threshold=float(_dget(weather_stress_d, "wet_threshold", 12.0)),
+                wet_scale=float(_dget(weather_stress_d, "wet_scale", 20.0)),
+                wind_threshold=float(_dget(weather_stress_d, "wind_threshold", 12.0)),
+                wind_scale=float(_dget(weather_stress_d, "wind_scale", 10.0)),
+                w_heat=float(_dget(weather_stress_d, "w_heat", 0.25)),
+                w_cold=float(_dget(weather_stress_d, "w_cold", 0.20)),
+                w_wet=float(_dget(weather_stress_d, "w_wet", 0.15)),
+                w_wind=float(_dget(weather_stress_d, "w_wind", 0.10)),
+                state_clip=float(_dget(weather_stress_d, "state_clip", 5.0)),
+            ),
+            food=WeatherFoodSection(
+                decay=float(_dget(weather_food_d, "decay", 0.90)),
+                sunshine_threshold_h=float(_dget(weather_food_d, "sunshine_threshold_h", 4.0)),
+                sunshine_scale_h=float(_dget(weather_food_d, "sunshine_scale_h", 6.0)),
+                rain_optimal_mm=float(_dget(weather_food_d, "rain_optimal_mm", 4.0)),
+                rain_tolerance_mm=float(_dget(weather_food_d, "rain_tolerance_mm", 8.0)),
+                w_sunshine=float(_dget(weather_food_d, "w_sunshine", 0.20)),
+                w_moderate_rain=float(_dget(weather_food_d, "w_moderate_rain", 0.15)),
+                heat_penalty_weight=float(_dget(weather_food_d, "heat_penalty_weight", 0.45)),
+                wet_penalty_weight=float(_dget(weather_food_d, "wet_penalty_weight", 0.40)),
+                state_clip=float(_dget(weather_food_d, "state_clip", 5.0)),
+            ),
+            habitat=WeatherHabitatSection(
+                decay=float(_dget(weather_habitat_d, "decay", 0.94)),
+                wetness_optimal_30d_mm=float(
+                    _dget(weather_habitat_d, "wetness_optimal_30d_mm", 90.0)
+                ),
+                wetness_tolerance_30d_mm=float(
+                    _dget(weather_habitat_d, "wetness_tolerance_30d_mm", 80.0)
+                ),
+                storm_threshold=float(_dget(weather_habitat_d, "storm_threshold", 16.0)),
+                storm_scale=float(_dget(weather_habitat_d, "storm_scale", 8.0)),
+                w_wet_balance=float(_dget(weather_habitat_d, "w_wet_balance", 0.20)),
+                w_stability=float(_dget(weather_habitat_d, "w_stability", 0.15)),
+                storm_penalty_weight=float(_dget(weather_habitat_d, "storm_penalty_weight", 0.45)),
+                state_clip=float(_dget(weather_habitat_d, "state_clip", 5.0)),
+            ),
+            interactions=WeatherInteractionsSection(
+                drought_threshold_30d_mm=float(
+                    _dget(weather_interactions_d, "drought_threshold_30d_mm", 50.0)
+                ),
+                drought_scale_30d_mm=float(
+                    _dget(weather_interactions_d, "drought_scale_30d_mm", 35.0)
+                ),
+                heat_drought_weight=float(
+                    _dget(weather_interactions_d, "heat_drought_weight", 0.35)
+                ),
+                cold_wet_weight=float(_dget(weather_interactions_d, "cold_wet_weight", 0.20)),
+                season_mode=str(_dget(weather_interactions_d, "season_mode", "window")),
+                breeding_start_doy=int(_dget(weather_interactions_d, "breeding_start_doy", 95)),
+                breeding_end_doy=int(_dget(weather_interactions_d, "breeding_end_doy", 205)),
+                season_strength=float(_dget(weather_interactions_d, "season_strength", 0.85)),
+                add_to_stress_weight=float(
+                    _dget(weather_interactions_d, "add_to_stress_weight", 0.60)
+                ),
+                add_to_food_weight=float(
+                    _dget(weather_interactions_d, "add_to_food_weight", 0.25)
+                ),
+                add_to_habitat_weight=float(
+                    _dget(weather_interactions_d, "add_to_habitat_weight", 0.30)
+                ),
+            ),
+            events=WeatherEventsSection(
+                heatwave=WeatherEventTypeSection(
+                    enabled=bool(_dget(weather_event_heatwave_d, "enabled", True)),
+                    threshold=float(_dget(weather_event_heatwave_d, "threshold", 32.0)),
+                    min_consecutive_days=int(
+                        _dget(weather_event_heatwave_d, "min_consecutive_days", 3)
+                    ),
+                    effect_duration_days=int(
+                        _dget(weather_event_heatwave_d, "effect_duration_days", 4)
+                    ),
+                    trigger_probability=float(
+                        _dget(weather_event_heatwave_d, "trigger_probability", 1.0)
+                    ),
+                    shock_reproduction_mult=float(
+                        _dget(weather_event_heatwave_d, "shock_reproduction_mult", 0.80)
+                    ),
+                    shock_juvenile_survival_mult=float(
+                        _dget(weather_event_heatwave_d, "shock_juvenile_survival_mult", 0.95)
+                    ),
+                    shock_adult_survival_mult=float(
+                        _dget(weather_event_heatwave_d, "shock_adult_survival_mult", 0.99)
+                    ),
+                ),
+                heavy_rain=WeatherEventTypeSection(
+                    enabled=bool(_dget(weather_event_heavy_rain_d, "enabled", True)),
+                    threshold=float(_dget(weather_event_heavy_rain_d, "threshold", 35.0)),
+                    min_consecutive_days=int(
+                        _dget(weather_event_heavy_rain_d, "min_consecutive_days", 1)
+                    ),
+                    effect_duration_days=int(
+                        _dget(weather_event_heavy_rain_d, "effect_duration_days", 2)
+                    ),
+                    trigger_probability=float(
+                        _dget(weather_event_heavy_rain_d, "trigger_probability", 1.0)
+                    ),
+                    shock_reproduction_mult=float(
+                        _dget(weather_event_heavy_rain_d, "shock_reproduction_mult", 0.88)
+                    ),
+                    shock_juvenile_survival_mult=float(
+                        _dget(weather_event_heavy_rain_d, "shock_juvenile_survival_mult", 0.96)
+                    ),
+                    shock_adult_survival_mult=float(
+                        _dget(weather_event_heavy_rain_d, "shock_adult_survival_mult", 0.995)
+                    ),
+                ),
+                storm=WeatherEventTypeSection(
+                    enabled=bool(_dget(weather_event_storm_d, "enabled", True)),
+                    threshold=float(_dget(weather_event_storm_d, "threshold", 22.0)),
+                    min_consecutive_days=int(
+                        _dget(weather_event_storm_d, "min_consecutive_days", 1)
+                    ),
+                    effect_duration_days=int(
+                        _dget(weather_event_storm_d, "effect_duration_days", 3)
+                    ),
+                    trigger_probability=float(
+                        _dget(weather_event_storm_d, "trigger_probability", 1.0)
+                    ),
+                    shock_reproduction_mult=float(
+                        _dget(weather_event_storm_d, "shock_reproduction_mult", 0.85)
+                    ),
+                    shock_juvenile_survival_mult=float(
+                        _dget(weather_event_storm_d, "shock_juvenile_survival_mult", 0.94)
+                    ),
+                    shock_adult_survival_mult=float(
+                        _dget(weather_event_storm_d, "shock_adult_survival_mult", 0.992)
+                    ),
+                ),
+                cold_snap=WeatherEventTypeSection(
+                    enabled=bool(_dget(weather_event_cold_snap_d, "enabled", True)),
+                    threshold=float(_dget(weather_event_cold_snap_d, "threshold", -2.0)),
+                    min_consecutive_days=int(
+                        _dget(weather_event_cold_snap_d, "min_consecutive_days", 2)
+                    ),
+                    effect_duration_days=int(
+                        _dget(weather_event_cold_snap_d, "effect_duration_days", 3)
+                    ),
+                    trigger_probability=float(
+                        _dget(weather_event_cold_snap_d, "trigger_probability", 1.0)
+                    ),
+                    shock_reproduction_mult=float(
+                        _dget(weather_event_cold_snap_d, "shock_reproduction_mult", 0.86)
+                    ),
+                    shock_juvenile_survival_mult=float(
+                        _dget(weather_event_cold_snap_d, "shock_juvenile_survival_mult", 0.95)
+                    ),
+                    shock_adult_survival_mult=float(
+                        _dget(weather_event_cold_snap_d, "shock_adult_survival_mult", 0.993)
+                    ),
+                ),
+            ),
+            factors=WeatherFactorsSection(
+                reproduction=WeatherFactorSection(
+                    intercept=float(_dget(weather_rep_d, "intercept", 0.35)),
+                    stress_weight=float(_dget(weather_rep_d, "stress_weight", 0.75)),
+                    food_weight=float(_dget(weather_rep_d, "food_weight", 0.25)),
+                    habitat_weight=float(_dget(weather_rep_d, "habitat_weight", 0.15)),
+                    min=float(_dget(weather_rep_d, "min", 0.90)),
+                    max=float(_dget(weather_rep_d, "max", 1.10)),
+                ),
+                juvenile_survival=WeatherFactorSection(
+                    intercept=float(_dget(weather_juv_d, "intercept", 0.35)),
+                    stress_weight=float(_dget(weather_juv_d, "stress_weight", 0.55)),
+                    food_weight=float(_dget(weather_juv_d, "food_weight", 0.12)),
+                    habitat_weight=float(_dget(weather_juv_d, "habitat_weight", 0.10)),
+                    min=float(_dget(weather_juv_d, "min", 0.97)),
+                    max=float(_dget(weather_juv_d, "max", 1.03)),
+                ),
+                adult_survival=WeatherFactorSection(
+                    intercept=float(_dget(weather_adult_d, "intercept", 0.40)),
+                    stress_weight=float(_dget(weather_adult_d, "stress_weight", 0.45)),
+                    food_weight=float(_dget(weather_adult_d, "food_weight", 0.08)),
+                    habitat_weight=float(_dget(weather_adult_d, "habitat_weight", 0.08)),
+                    min=float(_dget(weather_adult_d, "min", 0.995)),
+                    max=float(_dget(weather_adult_d, "max", 1.005)),
+                ),
+            ),
         ),
         raw=data,
     )

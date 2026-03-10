@@ -10,7 +10,18 @@ This repository is **work in progress**:
 - The simulation core still lives mostly in legacy modules.
 - CI checks (`ruff` + `pytest`) run on every push and pull request.
 
-## Installation (developer)
+## Installation
+
+### Runtime (simulation only)
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -e .
+```
+
+### Developer (runtime + test/lint)
 
 ```bash
 python3 -m venv .venv
@@ -18,6 +29,8 @@ source .venv/bin/activate
 pip install -U pip
 pip install -e ".[dev]"
 ```
+
+`fieldbird-sim run` works with the base install (`pip install -e .`).
 
 ## Run the simulation
 
@@ -47,6 +60,8 @@ Main options:
 - `run.year_to_show`
 - `run.day_to_show`
 - `seeds.*`
+- `weather_module.enabled` (optional nonlinear weather impacts)
+- `weather_module.weather_csv`
 
 ## Data files in this repository
 
@@ -68,6 +83,20 @@ python -m pytest -q
 ```
 
 `ruff` is intentionally scoped to maintained package and test code. Legacy simulation modules are excluded for now and will be migrated incrementally.
+
+## Weather impact module (optional)
+
+When `weather_module.enabled: true`, the simulation loads daily weather, updates latent weather-memory states (`stress_state`, `food_state`, `habitat_state`), and applies bounded nonlinear impact factors to:
+
+- reproduction probability
+- juvenile daily survival
+- adult daily survival
+
+The module also supports interaction terms (e.g. `heat*drought`, `cold*wet`) and season weighting (`weather_module.interactions`).
+
+Phase 4 adds configurable event shocks (`weather_module.events`) for `heatwave`, `heavy_rain`, `storm`, and `cold_snap` with threshold/streak triggers, event duration, optional trigger probability, and temporary multiplicative effects on reproduction and survival factors.
+
+The module writes per-step diagnostics to `weather_impact_log.csv` in each species run output directory.
 
 ## Governance and community files
 

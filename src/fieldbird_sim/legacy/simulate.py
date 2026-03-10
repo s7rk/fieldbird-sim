@@ -2,6 +2,7 @@ from __future__ import annotations
 
 
 import math
+from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 from typing import Dict, Optional
 
@@ -11,6 +12,36 @@ from .globals import *  # noqa: F401,F403
 from .layout import parse_days, parse_window, in_window
 from .habitat import measure_modifiers, food_index, cover_index, softmax
 from .species import clutch_multiplier_for
+
+
+def _coerce_date(value) -> date | None:
+    if value is None:
+        return None
+
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+
+    if hasattr(value, "date"):
+        try:
+            d = value.date()
+            if isinstance(d, date):
+                return d
+        except Exception:
+            pass
+
+    txt = str(value).strip()
+    if not txt:
+        return None
+    try:
+        return datetime.fromisoformat(txt.replace("Z", "+00:00")).date()
+    except Exception:
+        pass
+    try:
+        return date.fromisoformat(txt.split("T")[0])
+    except Exception:
+        return None
 
 
 
@@ -30,7 +61,16 @@ class BirdLandscapeSim:
     """
     def __init__(self, fields_df, rotation_df, management_df, species_cfg: SpeciesConfig, rng_seed: Optional[int] = None):
         self.fields = fields_df.copy().reset_index(drop=True)
-        for col, default in [("flower_strip_share", 0.0), ("skylark_plots", 0), ("skylark_plot_area", 0.0)]:
+        for col, default in [
+            ("flower_strip_share", 0.0),
+            ("skylark_plots", 0),
+            ("skylark_plot_area", 0.0),
+            ("hedge_length_m", 0.0),
+            ("hedge_quality_weighted_m", 0.0),
+            ("hedge_quality_mean", 0.0),
+            ("hedge_length_m_per_ha", 0.0),
+            ("hedge_quality_weighted_m_per_ha", 0.0),
+        ]:
             if col not in self.fields.columns:
                 self.fields[col] = default
         if "perimeter" not in self.fields.columns:
@@ -82,10 +122,39 @@ class BirdLandscapeSim:
         K_PER_HA_ADULTS_local = float(globals().get("K_PER_HA_ADULTS", 40.0))
         self.K_adults = (self.fields["area"].astype(float).to_numpy() * K_PER_HA_ADULTS_local).astype(float)
 
+        self._hedge_effect_enabled = bool(getattr(self.cfg, "hedge_effect_enabled", False))
+        self._hedge_food_bonus = float(getattr(self.cfg, "hedge_food_bonus_per_100m_per_ha", 0.0) or 0.0)
+        self._hedge_cover_bonus = float(getattr(self.cfg, "hedge_cover_bonus_per_100m_per_ha", 0.0) or 0.0)
+        self._hedge_attractiveness_bias = float(
+            getattr(self.cfg, "hedge_attractiveness_bias_per_100m_per_ha", 0.0) or 0.0
+        )
+        self._hedge_territory_area_bonus = float(
+            getattr(self.cfg, "hedge_territory_area_bonus_ha_per_100m_per_ha", 0.0) or 0.0
+        )
+        self._hedge_effect_clip = float(getattr(self.cfg, "hedge_effect_clip_100m_per_ha", 4.0) or 4.0)
+        self._hedge_effect_clip = max(0.0, self._hedge_effect_clip)
+
         # ---------- optionale Revier-Slots je Feld ----------
         self.territory_slots = self._compute_territory_slots()
         ts = self.territory_slots
         print(f"[territory_slots] {self.cfg.name}: min={ts.min()}, max={ts.max()}, >0={(ts > 0).sum()}/{len(ts)}")
+
+        clutch_base = float(getattr(self.cfg, "clutch_size", 0.0) or 0.0)
+        clutch_min = float(getattr(self.cfg, "clutch_size_min", clutch_base) or clutch_base)
+        clutch_mode = float(getattr(self.cfg, "clutch_size_mode", clutch_base) or clutch_base)
+        clutch_max = float(getattr(self.cfg, "clutch_size_max", clutch_base) or clutch_base)
+        self._clutch_min = min(clutch_min, clutch_max)
+        self._clutch_max = max(clutch_min, clutch_max)
+        self._clutch_mode = min(max(clutch_mode, self._clutch_min), self._clutch_max)
+        self._clutch_variable = abs(self._clutch_max - self._clutch_min) > 1e-9
+
+        self._replacement_only_early_loss = bool(
+            getattr(self.cfg, "replacement_brood_only_after_early_loss", False)
+        )
+        cutoff_default = int(self.cfg.breeding_window[0]) + 45
+        cutoff_raw = int(getattr(self.cfg, "replacement_brood_cutoff_doy", cutoff_default))
+        self._replacement_cutoff_doy = int(np.clip(cutoff_raw, 1, 365))
+
         # ---- schnelle Indizes & Pref-Cache
         self._fid2ix = {int(fid): i for i, fid in enumerate(self.fields["field_id"].astype(int).tolist())}
         self._pref_cache = {
@@ -110,6 +179,21 @@ class BirdLandscapeSim:
         Wenn weder territory_area_ha noch max_pairs_per_ha gesetzt ist, wird sehr groß gewählt (keine harte Begrenzung).
         """
         area_ha = self.fields["area"].astype(float).to_numpy()
+        if self._hedge_effect_enabled and self._hedge_territory_area_bonus != 0.0:
+            if "hedge_length_m_per_ha" in self.fields.columns:
+                hedge_density = pd.to_numeric(
+                    self.fields["hedge_length_m_per_ha"],
+                    errors="coerce",
+                ).fillna(0.0).to_numpy(float)
+            elif "hedge_quality_weighted_m_per_ha" in self.fields.columns:
+                hedge_density = pd.to_numeric(
+                    self.fields["hedge_quality_weighted_m_per_ha"],
+                    errors="coerce",
+                ).fillna(0.0).to_numpy(float)
+            else:
+                hedge_density = np.zeros_like(area_ha, dtype=float)
+            hedge_scaled = np.clip(np.maximum(hedge_density, 0.0) / 100.0, 0.0, self._hedge_effect_clip)
+            area_ha = np.maximum(area_ha + self._hedge_territory_area_bonus * hedge_scaled, 0.0)
         # akzeptiere beide mögliche Namen: territory_area_ha ODER territory_size_ha
         terr_area = float(
             getattr(self.cfg, "territory_area_ha", 0.0) or
@@ -133,6 +217,30 @@ class BirdLandscapeSim:
         slots = np.minimum(slots_area, slots_pph)
         slots = np.clip(slots, 0.0, BIG).astype(int)
         return slots
+
+    def _sample_nest_yield(self, nest_counts: np.ndarray) -> np.ndarray:
+        """
+        Samples per-nest clutch sizes (optional triangular distribution) and returns
+        the total fledgling potential per field for newly started nests.
+        """
+        out = np.zeros(len(nest_counts), dtype=np.float32)
+        fledge_rate = float(self.cfg.fledge_rate)
+
+        if not self._clutch_variable:
+            out[:] = nest_counts.astype(np.float32) * float(self._clutch_mode) * fledge_rate
+            return out
+
+        for i, c in enumerate(nest_counts.astype(int)):
+            if c <= 0:
+                continue
+            clutch = self.rng.triangular(
+                left=self._clutch_min,
+                mode=self._clutch_mode,
+                right=self._clutch_max,
+                size=int(c),
+            )
+            out[i] = float(np.sum(clutch) * fledge_rate)
+        return out
 
     # ---------- WINTER-Hilfen ----------
     def _prepare_year_cache(self, year: int):
@@ -306,6 +414,22 @@ class BirdLandscapeSim:
                 field_area_ha=float(frow.area),
             )
 
+            hedge_effect_scaled = 0.0
+            if self._hedge_effect_enabled:
+                hedge_metric = float(
+                    getattr(
+                        frow,
+                        "hedge_quality_weighted_m_per_ha",
+                        getattr(frow, "hedge_length_m_per_ha", 0.0),
+                    )
+                    or 0.0
+                )
+                hedge_effect_scaled = float(
+                    np.clip(max(hedge_metric, 0.0) / 100.0, 0.0, self._hedge_effect_clip)
+                )
+                d_food += self._hedge_food_bonus * hedge_effect_scaled
+                d_cover += self._hedge_cover_bonus * hedge_effect_scaled
+
             # Basis-Utility
             base_u = (
                 pref["w_food"] * food_index(crop, doy)
@@ -314,6 +438,7 @@ class BirdLandscapeSim:
                 + (p_stress + w_stress) * d_mult
             )
             base_u += pref["w_food"] * d_food + pref["w_cover"] * d_cover
+            base_u += self._hedge_attractiveness_bias * hedge_effect_scaled
             U[i] = base_u
 
             # Soft-Kapazität
@@ -408,7 +533,10 @@ class BirdLandscapeSim:
     # ---------- Hauptsimulation ----------
     def simulate(self, days: int = 365, year: int = 1, N_init: int = 50,
                  debug_days=None, log_repro: bool = True, keep_age_series: bool = True,
-                 start_state: Optional[dict] = None):
+                 start_state: Optional[dict] = None,
+                 weather_module=None,
+                 timeline_start_date=None,
+                 timeline_day_offset: int = 0):
 
         n = len(self.fields)
         rng = self.rng
@@ -432,6 +560,8 @@ class BirdLandscapeSim:
         nest_age_len = self.cfg.nest_cycle_days
         nests_open = np.zeros((nest_age_len, n), dtype=np.float32)
         nests_refuge = np.zeros((nest_age_len, n), dtype=np.float32)
+        nest_yield_open = np.zeros((nest_age_len, n), dtype=np.float32)
+        nest_yield_refuge = np.zeros((nest_age_len, n), dtype=np.float32)
 
         # Juvenile Alterskohorten
         age_len = max(1, int(self.cfg.juvenile_free_age))
@@ -443,6 +573,7 @@ class BirdLandscapeSim:
         cooldown_f = np.zeros((max(1, cooldown_len), n), dtype=np.int32) if cooldown_len > 0 else None
 
         broods_started_per_f = np.zeros(n, dtype=np.float32)
+        renest_credits = np.zeros(n, dtype=np.int32)
 
         arr = max(1, int(self.cfg.arrival_day))
         dep = min(days, int(self.cfg.departure_day))
@@ -463,12 +594,40 @@ class BirdLandscapeSim:
 
         t0 = max(arr - 1, 0)
         tEnd = min(dep - 1, days - 2)
+
+        weather_start_date = None
+        day_offset = int(timeline_day_offset)
+        weather_diag_by_t = {}
+        if weather_module is not None:
+            start_candidate = timeline_start_date
+            if start_candidate is None:
+                start_candidate = getattr(weather_module, "default_start_date", None)
+            weather_start_date = _coerce_date(start_candidate)
+            if weather_start_date is None:
+                raise ValueError(
+                    "weather module enabled, but no valid timeline_start_date could be resolved."
+                )
+
+            # advance over the full year so weather memory remains continuous even outside bird activity
+            for day_idx in range(days):
+                sim_date = weather_start_date + timedelta(days=day_offset + day_idx)
+                weather_diag_by_t[day_idx] = weather_module.step(sim_date)
+
         for t in range(t0, tEnd + 1):
             doy = t + 1
             in_breed = (self.cfg.breeding_window[0] <= doy <= self.cfg.breeding_window[1])
 
             prev_idx = t
             next_idx = t + 1
+
+            reproduction_factor = 1.0
+            juvenile_survival_factor = 1.0
+            adult_survival_factor = 1.0
+            if weather_module is not None:
+                weather_diag = weather_diag_by_t.get(t, {})
+                reproduction_factor = float(weather_diag.get("reproduction_factor", 1.0))
+                juvenile_survival_factor = float(weather_diag.get("juvenile_survival_factor", 1.0))
+                adult_survival_factor = float(weather_diag.get("adult_survival_factor", 1.0))
 
             prev_m = A_m[prev_idx, :].copy()
             prev_f = A_f[prev_idx, :].copy()
@@ -552,9 +711,12 @@ class BirdLandscapeSim:
                 potential_pairs = np.minimum(available_f, available_m)
 
                 # Max. Bruten pro Weibchen einhalten
-                max_broods_total = self.cfg.max_broods_per_female * today_f
-                started_total = (broods_started_per_f * today_f).astype(float)
-                remaining_capacity = np.maximum(0.0, max_broods_total - started_total).astype(int)
+                max_broods_total = int(self.cfg.max_broods_per_female) * today_f
+                started_total = np.floor(np.maximum(broods_started_per_f, 0.0) * today_f).astype(int)
+                started_total = np.clip(started_total, 0, max_broods_total)
+                remaining_capacity = np.maximum(max_broods_total - started_total, 0)
+                first_brood_capacity = np.maximum(today_f - started_total, 0)
+                replacement_capacity = np.maximum(remaining_capacity - first_brood_capacity, 0)
 
                 # Revier-Slots – aktive Paare ≈ aktive Nester heute
                 active_pairs_approx = (nests_open.sum(axis=0) + nests_refuge.sum(axis=0)).astype(int)
@@ -592,22 +754,45 @@ class BirdLandscapeSim:
                         mult_vec[i] = float(m)
 
                 p_start_vec = np.clip(p_start_vec * mult_vec, 0.0, 0.9)
+                p_start_vec = np.clip(p_start_vec * reproduction_factor, 0.0, 0.9)
 
-                can_start = np.minimum(potential_pairs, remaining_capacity)
+                if self._replacement_only_early_loss:
+                    credit_capacity = np.minimum(np.maximum(renest_credits, 0), replacement_capacity)
+                    start_capacity = first_brood_capacity + credit_capacity
+                else:
+                    start_capacity = remaining_capacity
+
+                can_start = np.minimum(potential_pairs, start_capacity)
                 can_start = np.minimum(can_start, free_slots)
                 can_start = np.maximum(can_start, 0)
 
-                new_nests = rng.binomial(n=np.maximum(can_start, 0), p=p_start_vec)
+                new_nests = rng.binomial(n=np.maximum(can_start.astype(int), 0), p=p_start_vec)
+                if self._replacement_only_early_loss:
+                    first_starts = np.minimum(new_nests, first_brood_capacity)
+                    replacement_starts = np.minimum(
+                        new_nests - first_starts,
+                        np.maximum(renest_credits, 0),
+                    )
+                    renest_credits = np.maximum(renest_credits - replacement_starts, 0)
+                else:
+                    first_starts = new_nests
+                    replacement_starts = np.zeros_like(new_nests)
+
                 daily_new_nests[next_idx, :] = new_nests.astype(int)
 
                 # --- Starts des heutigen Tages je Gelege aufsplitten ---
-                c1_mask = (clutch_idx == 1)
-                c2_mask = (clutch_idx == 2)
-                c3_mask = (clutch_idx >= 3)
+                if self._replacement_only_early_loss:
+                    d_c1 = first_starts
+                    d_c2 = replacement_starts
+                    d_c3 = np.zeros_like(new_nests)
+                else:
+                    c1_mask = (clutch_idx == 1)
+                    c2_mask = (clutch_idx == 2)
+                    c3_mask = (clutch_idx >= 3)
 
-                d_c1 = np.where(c1_mask, new_nests, 0)
-                d_c2 = np.where(c2_mask, new_nests, 0)
-                d_c3 = np.where(c3_mask, new_nests, 0)
+                    d_c1 = np.where(c1_mask, new_nests, 0)
+                    d_c2 = np.where(c2_mask, new_nests, 0)
+                    d_c3 = np.where(c3_mask, new_nests, 0)
 
                 daily_new_nests_c1[next_idx, :] = d_c1.astype(int)
                 daily_new_nests_c2[next_idx, :] = d_c2.astype(int)
@@ -616,9 +801,16 @@ class BirdLandscapeSim:
                 # Anteil in Refuge verteilen
                 new_to_ref = rng.binomial(new_nests, np.clip(p_ref_nest, 0.0, REFUGE_SHARE_CAP))
                 new_to_open = new_nests - new_to_ref
+                new_yield_total = self._sample_nest_yield(new_nests)
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    ref_share = np.where(new_nests > 0, new_to_ref / np.maximum(new_nests, 1), 0.0)
+                new_yield_ref = new_yield_total * ref_share
+                new_yield_open = new_yield_total - new_yield_ref
 
                 nests_open = np.roll(nests_open, shift=1, axis=0);    nests_open[0, :] = new_to_open.astype(float)
                 nests_refuge = np.roll(nests_refuge, shift=1, axis=0); nests_refuge[0, :] = new_to_ref.astype(float)
+                nest_yield_open = np.roll(nest_yield_open, shift=1, axis=0); nest_yield_open[0, :] = new_yield_open.astype(np.float32)
+                nest_yield_refuge = np.roll(nest_yield_refuge, shift=1, axis=0); nest_yield_refuge[0, :] = new_yield_ref.astype(np.float32)
 
                 with np.errstate(divide='ignore', invalid='ignore'):
                     broods_started_per_f += np.where(today_f > 0, new_nests / today_f, 0.0)
@@ -626,6 +818,8 @@ class BirdLandscapeSim:
                 p_start_vec = np.zeros_like(U)
                 nests_open = np.roll(nests_open, shift=1, axis=0);     nests_open[0, :] = 0.0
                 nests_refuge = np.roll(nests_refuge, shift=1, axis=0);  nests_refuge[0, :] = 0.0
+                nest_yield_open = np.roll(nest_yield_open, shift=1, axis=0); nest_yield_open[0, :] = 0.0
+                nest_yield_refuge = np.roll(nest_yield_refuge, shift=1, axis=0); nest_yield_refuge[0, :] = 0.0
 
             # ---------------- Nest-Überleben & Fledglings ----------------
             base = float(np.clip(self.cfg.base_nest_survival_day, 0.0001, 0.999))
@@ -654,29 +848,47 @@ class BirdLandscapeSim:
 
             for a in range(nest_age_len):
                 if nests_open[a, :].sum() > 0:
-                    fails_o = rng.binomial(n=np.maximum(nests_open[a, :].astype(int), 0), p=(1.0 - nest_surv_open))
+                    open_n = np.maximum(nests_open[a, :].astype(int), 0)
+                    fails_o = rng.binomial(n=open_n, p=(1.0 - nest_surv_open))
+                    survived_o = np.maximum(open_n - fails_o, 0)
+                    with np.errstate(divide="ignore", invalid="ignore"):
+                        keep_frac_o = np.where(open_n > 0, survived_o / open_n, 0.0)
                     failed_open_today += fails_o.astype(int)
-                    nests_open[a, :] = np.maximum(0.0, nests_open[a, :] - fails_o)
+                    nests_open[a, :] = survived_o.astype(np.float32)
+                    nest_yield_open[a, :] = np.maximum(nest_yield_open[a, :] * keep_frac_o, 0.0)
                 if nests_refuge[a, :].sum() > 0:
-                    fails_r = rng.binomial(n=np.maximum(nests_refuge[a, :].astype(int), 0), p=(1.0 - nest_surv_ref))
+                    refuge_n = np.maximum(nests_refuge[a, :].astype(int), 0)
+                    fails_r = rng.binomial(n=refuge_n, p=(1.0 - nest_surv_ref))
+                    survived_r = np.maximum(refuge_n - fails_r, 0)
+                    with np.errstate(divide="ignore", invalid="ignore"):
+                        keep_frac_r = np.where(refuge_n > 0, survived_r / refuge_n, 0.0)
                     failed_ref_today += fails_r.astype(int)
-                    nests_refuge[a, :] = np.maximum(0.0, nests_refuge[a, :] - fails_r)
+                    nests_refuge[a, :] = survived_r.astype(np.float32)
+                    nest_yield_refuge[a, :] = np.maximum(nest_yield_refuge[a, :] * keep_frac_r, 0.0)
 
             failed_today = failed_open_today + failed_ref_today
+            if self._replacement_only_early_loss and doy <= self._replacement_cutoff_doy:
+                renest_credits = np.minimum(
+                    renest_credits + failed_today.astype(np.int32),
+                    np.iinfo(np.int32).max,
+                )
             if cooldown_len > 0 and cooldown_f is not None:
                 to_cool = np.minimum(A_f_breeding[next_idx, :].astype(int), failed_today.astype(int))
                 cooldown_f[0, :] += to_cool
 
             # Fledglings am Ende des Zyklus
             fledging_n = nests_open[-1, :].copy() + nests_refuge[-1, :].copy()
+            fledging_yield = nest_yield_open[-1, :].copy() + nest_yield_refuge[-1, :].copy()
             nests_open[-1, :] = 0.0
             nests_refuge[-1, :] = 0.0
-            fledglings_raw = fledging_n * self.cfg.clutch_size * self.cfg.fledge_rate
+            nest_yield_open[-1, :] = 0.0
+            nest_yield_refuge[-1, :] = 0.0
+            fledglings_raw = fledging_yield
             fledglings_raw = fledglings_raw * fl_mult_vec
             # WICHTIG: optional Dichtefaktor auch auf Jungvögel (wie früher) – nur wenn aktiviert
             if USE_DENSITY_FACTOR and self.cfg.density_affects_start:
                 fledglings_raw = fledglings_raw * density_factor
-            fledglings = fledglings_raw.astype(int)
+            fledglings = np.maximum(fledglings_raw, 0.0).astype(int)
             daily_fledglings[next_idx, :] = fledglings.astype(int)
 
             # Adult Survival
@@ -684,19 +896,21 @@ class BirdLandscapeSim:
             surv_nb = float(np.clip(self.cfg.survival_nonbreeding, 0.0, 1.0))
             # ---------------- Adult Survival (tägliche Überlebensrate) ----------------
             p_adult = surv_b if in_breed else surv_nb
+            p_adult = float(np.clip(p_adult * adult_survival_factor, 0.0, 1.0))
             A_m[next_idx, :] = rng.binomial(np.maximum(today_m, 0), p_adult)
             A_f[next_idx, :] = rng.binomial(np.maximum(today_f, 0), p_adult)
 
             # ---------------- Juvenile: altern, überleben, frei werden ----------------
             # (1) Nestlinge, die heute flügge wurden, kommen in Alterskohorte 0
             new_fledge = fledglings.astype(int)
+            p_juvenile = float(np.clip(self.cfg.survival_juvenile * juvenile_survival_factor, 0.0, 1.0))
 
             # (2) Alle vorhandenen Alterskohorten überleben heute als Juvenile
             if J_age.sum() > 0:
                 for a in range(age_len):
                     vals = np.maximum(J_age[a, :].astype(int), 0)
                     if vals.sum() > 0:
-                        J_age[a, :] = rng.binomial(vals, float(self.cfg.survival_juvenile))
+                        J_age[a, :] = rng.binomial(vals, p_juvenile)
 
             # (3) Kohorte, die heute "aus dem Raster" fällt, wird zu J_free
             released_today = J_age[-1, :].astype(int).copy()
@@ -711,7 +925,7 @@ class BirdLandscapeSim:
                 J_age[0, :] += new_fledge
 
             # (6) Freie Juvenile (bereits "out of nest" + aus Alterskohorten entlassen)
-            prev_free_surv = rng.binomial(np.maximum(prev_free, 0), float(self.cfg.survival_juvenile))
+            prev_free_surv = rng.binomial(np.maximum(prev_free, 0), p_juvenile)
             J_free[next_idx, :] = prev_free_surv + released_today
             # >>> NEU: gebundene Juvenile (Summe aller Alterskohorten) mitschreiben
             J_tied_total[next_idx, :] = J_age.sum(axis=0).astype(int)

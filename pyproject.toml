@@ -12,6 +12,11 @@ dependencies = [
   "numpy",
   "pandas",
   "pyyaml",
+  "shapely",
+  "geopandas",
+  "pyproj",
+  "pyogrio",
+  "matplotlib",
 ]
 
 [project.optional-dependencies]
@@ -19,6 +24,7 @@ dev = [
   "pytest",
   "ruff",
 ]
+# Backward-compatible aliases (runtime deps are already part of base install)
 geo = [
   "shapely",
   "geopandas",

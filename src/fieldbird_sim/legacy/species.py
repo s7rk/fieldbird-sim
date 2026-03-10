@@ -23,12 +23,23 @@ class SpeciesConfig:
     base_nest_survival_day: float
     nest_disturb_sensitivity: float
     clutch_size: float
+    clutch_size_min: float
+    clutch_size_mode: float
+    clutch_size_max: float
     fledge_rate: float
     max_broods_per_female: int
+    replacement_brood_only_after_early_loss: bool
+    replacement_brood_cutoff_doy: int
     juvenile_free_age: int
     alpha_density: float
     density_affects_start: bool
     nest_refuge_gamma: float
+    hedge_effect_enabled: bool = False
+    hedge_food_bonus_per_100m_per_ha: float = 0.0
+    hedge_cover_bonus_per_100m_per_ha: float = 0.0
+    hedge_attractiveness_bias_per_100m_per_ha: float = 0.0
+    hedge_territory_area_bonus_ha_per_100m_per_ha: float = 0.0
+    hedge_effect_clip_100m_per_ha: float = 4.0
     territory_size_ha: float = 0.0                # mittlere Reviergröße (ha), 0 => deaktiviert
     max_pairs_per_ha: float = 0.0                 # Kapazität (Paare/ha), 0 => deaktiviert
     renest_cooldown_days: int = 0                 # Tage Sperrfrist nach Nestverlust, 0 => aus
@@ -274,6 +285,14 @@ def load_species_from_csv(name: str, base_path: str | Path = ".") -> SpeciesConf
         surv_nb = surv_nb ** (1.0 / float(nonbreed_days))
         surv_j  = surv_j  ** (1.0 / 365.0)
 
+    clutch_size_base = _getf(params, "clutch_size", 3.0)
+    clutch_size_min = _getf(params, "clutch_size_min", clutch_size_base)
+    clutch_size_mode = _getf(params, "clutch_size_mode", clutch_size_base)
+    clutch_size_max = _getf(params, "clutch_size_max", clutch_size_base)
+    c_lo = min(clutch_size_min, clutch_size_max)
+    c_hi = max(clutch_size_min, clutch_size_max)
+    c_md = min(max(clutch_size_mode, c_lo), c_hi)
+
     cfg = SpeciesConfig(
         name=_gets(params, "name", name),
 
@@ -298,9 +317,22 @@ def load_species_from_csv(name: str, base_path: str | Path = ".") -> SpeciesConf
         nest_cycle_days=_geti(params, "nest_cycle_days", 28),
         base_nest_survival_day=_norm_prob(params.get("base_nest_survival_day"), 0.98),
         nest_disturb_sensitivity=_getf(params, "nest_disturb_sensitivity", 0.25),
-        clutch_size=_getf(params, "clutch_size", 3.0),
+        clutch_size=clutch_size_base,
+        clutch_size_min=c_lo,
+        clutch_size_mode=c_md,
+        clutch_size_max=c_hi,
         fledge_rate=_norm_prob(params.get("fledge_rate"), 0.85),
         max_broods_per_female=_geti(params, "max_broods_per_female", 2),
+        replacement_brood_only_after_early_loss=_getb(
+            params,
+            "replacement_brood_only_after_early_loss",
+            False,
+        ),
+        replacement_brood_cutoff_doy=_geti(
+            params,
+            "replacement_brood_cutoff_doy",
+            min(365, max(1, b0 + 45)),
+        ),
 
         # Juvenile
         juvenile_free_age=_geti(params, "juvenile_free_age", 21),
@@ -312,6 +344,20 @@ def load_species_from_csv(name: str, base_path: str | Path = ".") -> SpeciesConf
         # Refugien / Lerchenfenster
         nest_refuge_gamma=_norm_prob(params.get("nest_refuge_gamma"), 0.15),
         benefits_from_skylark_windows=_getb(params, "benefits_from_skylark_windows", True),
+        hedge_effect_enabled=_getb(params, "hedge_effect_enabled", False),
+        hedge_food_bonus_per_100m_per_ha=_getf(params, "hedge_food_bonus_per_100m_per_ha", 0.0),
+        hedge_cover_bonus_per_100m_per_ha=_getf(params, "hedge_cover_bonus_per_100m_per_ha", 0.0),
+        hedge_attractiveness_bias_per_100m_per_ha=_getf(
+            params,
+            "hedge_attractiveness_bias_per_100m_per_ha",
+            0.0,
+        ),
+        hedge_territory_area_bonus_ha_per_100m_per_ha=_getf(
+            params,
+            "hedge_territory_area_bonus_ha_per_100m_per_ha",
+            0.0,
+        ),
+        hedge_effect_clip_100m_per_ha=_getf(params, "hedge_effect_clip_100m_per_ha", 4.0),
 
         # Revier-/Kapazitäts-Defaults
         territory_size_ha=_getf(params, "territory_size_ha", 0.0),

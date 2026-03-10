@@ -1128,12 +1128,25 @@ def run_years_with_feedback(
     N_init_first: int = 100,
     outdir: Optional[Path] = None,
     extra_filename: Optional[str] = None,
+    weather_module=None,
+    timeline_start_date=None,
 ):
     """
     Multi-year simulation with winter redistribution feedback.
     Keeps API compatible with legacy.kpis usage.
     """
     from .simulate import BirdLandscapeSim
+
+    fields_gdf = fields_gdf.copy()
+    for col, default in [
+        ("hedge_length_m", 0.0),
+        ("hedge_quality_weighted_m", 0.0),
+        ("hedge_quality_mean", 0.0),
+        ("hedge_length_m_per_ha", 0.0),
+        ("hedge_quality_weighted_m_per_ha", 0.0),
+    ]:
+        if col not in fields_gdf.columns:
+            fields_gdf[col] = default
 
     sim = BirdLandscapeSim(
         fields_gdf[
@@ -1146,6 +1159,11 @@ def run_years_with_feedback(
                 "flower_strip_share",
                 "skylark_plots",
                 "skylark_plot_area",
+                "hedge_length_m",
+                "hedge_quality_weighted_m",
+                "hedge_quality_mean",
+                "hedge_length_m_per_ha",
+                "hedge_quality_weighted_m_per_ha",
                 "width_m",
                 "height_m",
             ]
@@ -1162,7 +1180,7 @@ def run_years_with_feedback(
     juv_log: List[dict] = []
     juv_qc_rows: List[dict] = []
 
-    for y in years:
+    for year_idx, y in enumerate(years):
         res = sim.simulate(
             days=365,
             year=int(y),
@@ -1171,6 +1189,9 @@ def run_years_with_feedback(
             debug_days=None,
             log_repro=False,
             keep_age_series=False,
+            weather_module=weather_module,
+            timeline_start_date=timeline_start_date,
+            timeline_day_offset=int(year_idx) * 365,
         )
         results_by_year[int(y)] = res
 

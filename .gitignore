@@ -5,6 +5,8 @@
 __pycache__/
 *.py[cod]
 .ruff_cache/
+.pytest_cache/
+.mpl-cache/
 
 # OS / IDE
 .DS_Store

@@ -24,14 +24,12 @@ from .globals import (
     make_synthetic_fields,
     make_rotation,
     make_management,
-    make_random_hedges,
     run_years_with_feedback,
     save_run_bundle,
 )
 
 # Geometry / layout / hedges
 from .layout import (
-    build_hedge_geoms_on_shared_edges,
     rect_or_centroid_layout,
     heatmap,
     plot_map,
@@ -42,109 +40,33 @@ from .species import load_species_from_csv
 
 # Simulation core
 from .simulate import BirdLandscapeSim, to_long_timeseries
+from .plot_controls import get_plot_controls
+from .hedge_setup import build_hedges_from_cfg, attach_hedge_metrics_to_fields
+from .scenario_plan import build_scenarios_to_run, apply_scenario_to_inputs
+from .weather_builder import build_weather_module_from_cfg
 
 
 # =========================================================
 #  Helpers
 # =========================================================
 
-def _build_hedges_from_cfg(*, cfg, fields_gdf):
-    """
-    YAML-controlled hedges.
 
-    If cfg.hedges.from_csv == True:
-      - try cfg.inputs.hedges_csv
-      - if file exists + has columns f1,f2 and rows -> use
-      - else fallback to random
+def _resolve_species_list(species_raw) -> list[str]:
+    if species_raw is None:
+        return list(SPECIES_LIST)
 
-    Else:
-      - always random
+    if isinstance(species_raw, str):
+        s = species_raw.strip()
+        return [s] if s else list(SPECIES_LIST)
 
-    Also supports cfg.hedges.p_edge for random hedges.
+    try:
+        vals = [str(x).strip() for x in species_raw]
+    except TypeError:
+        s = str(species_raw).strip()
+        return [s] if s else list(SPECIES_LIST)
 
-    Returns:
-      hedges_gdf or None
-    """
-    hedges_section = getattr(cfg, "hedges", None)
-    from_csv = bool(getattr(hedges_section, "from_csv", False))
-    p_edge = float(getattr(hedges_section, "p_edge", 0.7))
-
-    # ---- Try CSV ----
-    if from_csv:
-        inputs = getattr(cfg, "inputs", None)
-        hedges_csv_raw = getattr(inputs, "hedges_csv", None) if inputs is not None else None
-        hedges_csv = Path(str(hedges_csv_raw)) if hedges_csv_raw else None
-
-        if hedges_csv and hedges_csv.exists():
-            try:
-                hedge_pairs = pd.read_csv(hedges_csv)
-            except Exception as e:
-                print(f"[warn] could not read hedges_csv={hedges_csv}: {e} -> fallback to random.")
-                hedge_pairs = pd.DataFrame()
-
-            if {"f1", "f2"}.issubset(hedge_pairs.columns) and len(hedge_pairs) > 0:
-                return build_hedge_geoms_on_shared_edges(fields_gdf, hedge_pairs)
-
-            print(f"[warn] hedges.from_csv=true but hedges file empty/invalid: {hedges_csv} -> fallback to random.")
-        else:
-            print(f"[warn] hedges.from_csv=true but hedges_csv missing or not set: {hedges_csv_raw} -> fallback to random.")
-
-    # ---- Random fallback ----
-    hedge_pairs = make_random_hedges(fields_gdf, p_edge=p_edge, seed=int(cfg.seeds.hedges))
-    return build_hedge_geoms_on_shared_edges(fields_gdf, hedge_pairs)
-
-
-def _parse_year_selector(sel, *, years_to_sim, year_to_show: int) -> list[int]:
-    """
-    sel: "all" | "year_to_show" | list[int] | tuple[int] | None
-    """
-    if sel is None:
-        return list(years_to_sim)
-
-    if isinstance(sel, str):
-        s = sel.strip().lower()
-        if s == "all":
-            return list(years_to_sim)
-        if s == "year_to_show":
-            return [int(year_to_show)]
-        return list(years_to_sim)
-
-    if isinstance(sel, (list, tuple)):
-        out = []
-        for x in sel:
-            try:
-                out.append(int(x))
-            except Exception:
-                pass
-        valid = set(int(y) for y in years_to_sim)
-        out = [y for y in out if y in valid]
-        return out if out else list(years_to_sim)
-
-    return list(years_to_sim)
-
-
-def _get_plot_controls(cfg, *, years_to_sim, year_to_show: int) -> dict:
-    """
-    Returns dict with:
-      maps_years, heatmaps_years, usage_map, heatmap_vmax_mode
-    """
-    plots = getattr(cfg, "plots", None)
-
-    maps_sel = getattr(plots, "maps_years", "year_to_show") if plots is not None else "year_to_show"
-    heat_sel = getattr(plots, "heatmaps_years", "year_to_show") if plots is not None else "year_to_show"
-    usage_map = bool(getattr(plots, "usage_map", True)) if plots is not None else True
-
-    vmax_mode = str(getattr(plots, "heatmap_vmax_mode", "global")) if plots is not None else "global"
-    vmax_mode = vmax_mode.strip().lower()
-    if vmax_mode not in {"global", "per_year"}:
-        vmax_mode = "global"
-
-    return dict(
-        maps_years=_parse_year_selector(maps_sel, years_to_sim=years_to_sim, year_to_show=year_to_show),
-        heatmaps_years=_parse_year_selector(heat_sel, years_to_sim=years_to_sim, year_to_show=year_to_show),
-        usage_map=usage_map,
-        heatmap_vmax_mode=vmax_mode,
-    )
+    vals = [v for v in vals if v]
+    return vals if vals else list(SPECIES_LIST)
 
 
 # =========================================================
@@ -1022,7 +944,7 @@ def run(*, cfg) -> None:
         years_to_sim = unique_years[: int(cfg.run.n_years)]
 
     # IMPORTANT: plot controls AFTER years_to_sim is final (CSV overrides years_to_sim)
-    plot_ctl = _get_plot_controls(cfg, years_to_sim=years_to_sim, year_to_show=int(YEAR_TO_SHOW))
+    plot_ctl = get_plot_controls(cfg, years_to_sim=years_to_sim, year_to_show=int(YEAR_TO_SHOW))
 
     # 5) Logging
     print(
@@ -1035,141 +957,13 @@ def run(*, cfg) -> None:
         f"YEAR_TO_SHOW={YEAR_TO_SHOW} | DAY_TO_SHOW={DAY_TO_SHOW}"
     )
 
-    species_list = list(getattr(cfg.run, "species", SPECIES_LIST))
+    species_list = _resolve_species_list(getattr(cfg.run, "species", None))
     n_init_first = int(getattr(cfg.run, "n_init_first", 100))
 
     # =========================================================
     #  Scenario plan (one scenario run covers ALL species)
     # =========================================================
-    scenarios_to_run: list[dict] = []
-
-    # Baseline always
-    scenarios_to_run.append({"name": "Baseline", "kind": "baseline", "payload": None})
-
-    # Scenario A (shifts)
-    if bool(getattr(cfg.scenarios.A, "enabled", False)):
-        for shift in list(getattr(cfg.scenarios.A, "shifts", [])):
-            scenarios_to_run.append(
-                {"name": f"Scenario_A_shift_{int(shift)}", "kind": "A", "payload": {"shift": int(shift)}}
-            )
-
-    # Scenario B (shares x fractions)
-    if bool(getattr(cfg.scenarios.B, "enabled", False)):
-        shares = list(getattr(cfg.scenarios.B, "shares", []))
-        fracs = list(getattr(cfg.scenarios.B, "fractions", []))
-        sel = str(getattr(cfg.scenarios.B, "select", "no_flower_first"))
-        seedB = int(getattr(cfg.scenarios.B, "seed", 0))
-        for s in shares:
-            for f in fracs:
-                scenarios_to_run.append(
-                    {
-                        "name": f"Scenario_B_share_{float(s):.2f}_frac_{float(f):.2f}",
-                        "kind": "B",
-                        "payload": {"share": float(s), "fraction": float(f), "select": sel, "seed": seedB},
-                    }
-                )
-
-    # Scenario C (fallow shares)
-    if bool(getattr(cfg.scenarios.C, "enabled", False)):
-        fallows = list(getattr(cfg.scenarios.C, "fallow_area_shares", []))
-        apply_years = getattr(cfg.scenarios.C, "apply_years", "all")
-        selection = str(getattr(cfg.scenarios.C, "selection", "greedy"))
-        seedC = int(getattr(cfg.scenarios.C, "seed", 0))
-        for fa in fallows:
-            scenarios_to_run.append(
-                {
-                    "name": f"Scenario_C_fallow_{float(fa):.2f}",
-                    "kind": "C",
-                    "payload": {
-                        "fallow_area_share": float(fa),
-                        "apply_years": apply_years,
-                        "selection": selection,
-                        "seed": seedC,
-                    },
-                }
-            )
-
-    # Scenario D (skylark plots)
-    if bool(getattr(cfg.scenarios.D, "enabled", False)):
-        scenarios_to_run.append(
-            {
-                "name": "Scenario_D_skylark",
-                "kind": "D",
-                "payload": {
-                    "add_skylark_plots": int(getattr(cfg.scenarios.D, "add_skylark_plots", 0)),
-                    "skylark_plot_area": float(getattr(cfg.scenarios.D, "skylark_plot_area", 0.0)),
-                    "target_fraction": float(getattr(cfg.scenarios.D, "target_fraction", 0.0)),
-                    "min_eligible_years": int(getattr(cfg.scenarios.D, "min_eligible_years", 1)),
-                    "only_without_flower": bool(getattr(cfg.scenarios.D, "only_without_flower", True)),
-                },
-            }
-        )
-
-    # apply scenario changes to (fields/rotation/management)
-    def _apply_scenario_to_inputs(*, scen: dict, fields_gdf_in, rotation_in, management_in, years_to_sim):
-        kind = scen.get("kind")
-        payload = scen.get("payload") or {}
-
-        # default: unchanged
-        fields_out = fields_gdf_in
-        rot_out = rotation_in
-        mgmt_out = management_in
-
-        if kind == "A":
-            shift = int(payload.get("shift", 0))
-            mgmt_out = apply_scenario_A_shift_management(mgmt_out, shift=shift)
-
-        if kind == "B":
-            share = float(payload.get("share", 0.0))
-            fraction = float(payload.get("fraction", 0.0))
-            select = str(payload.get("select", "no_flower_first"))
-            seedB = int(payload.get("seed", 0))
-
-            fields_out = apply_scenario_B_flower_strips(
-                fields_out,
-                share=share,
-                fraction=fraction,
-                select=select,
-                seed=seedB,
-            )
-
-        if kind == "C":
-            fallow_area_share = float(payload.get("fallow_area_share", 0.0))
-            apply_years = payload.get("apply_years", "all")
-            selection = str(payload.get("selection", "greedy"))
-            seedC = int(payload.get("seed", 0))
-
-            # years selector: "all" or list
-            if isinstance(apply_years, str) and apply_years.strip().lower() == "all":
-                years_apply = list(years_to_sim)
-            elif isinstance(apply_years, (list, tuple)):
-                years_apply = [int(y) for y in apply_years]
-            else:
-                years_apply = list(years_to_sim)
-
-            rot_out = apply_scenario_C_fallow(
-                fields_gdf_in=fields_out,
-                rotation_in=rot_out,
-                fallow_area_share=fallow_area_share,
-                years_to_apply=years_apply,
-                selection=selection,
-                seed=seedC,
-            )
-
-        if kind == "D":
-            # D affects fields only
-            fields_out = apply_scenario_D_skylark(
-                fields_gdf_in=fields_out,
-                rotation_in=rot_out,
-                years_to_sim=list(years_to_sim),
-                add_skylark_plots=int(payload.get("add_skylark_plots", 0)),
-                skylark_plot_area=float(payload.get("skylark_plot_area", 0.0)),
-                target_fraction=float(payload.get("target_fraction", 0.0)),
-                min_eligible_years=int(payload.get("min_eligible_years", 1)),
-                only_without_flower=bool(payload.get("only_without_flower", True)),
-                seed=int(payload.get("seed", 0)),  # optional; if not in payload -> 0
-            )
-        return fields_out, rot_out, mgmt_out
+    scenarios_to_run = build_scenarios_to_run(cfg)
 
     # Baseline results store (for future deltas)
     baseline_results_by_species: dict[str, dict] = {}
@@ -1186,19 +980,25 @@ def run(*, cfg) -> None:
         scenario_outdir = outdir / scen_name
         scenario_outdir.mkdir(parents=True, exist_ok=True)
 
-        fields_sc, rot_sc, mgmt_sc = _apply_scenario_to_inputs(
+        fields_sc, rot_sc, mgmt_sc = apply_scenario_to_inputs(
             scen=scen,
             fields_gdf_in=fields_gdf,
             rotation_in=rotation,
             management_in=management,
             years_to_sim=years_to_sim,
+            apply_A_shift_management=apply_scenario_A_shift_management,
+            apply_B_flower_strips=apply_scenario_B_flower_strips,
+            apply_C_fallow=apply_scenario_C_fallow,
+            apply_D_skylark=apply_scenario_D_skylark,
         )
 
         # IMPORTANT: rebuild hedges per scenario (will matter once scenarios change fields)
-        hedges_sc = _build_hedges_from_cfg(cfg=cfg, fields_gdf=fields_sc)
+        hedges_sc = build_hedges_from_cfg(cfg=cfg, fields_gdf=fields_sc)
+        fields_sc = attach_hedge_metrics_to_fields(fields_gdf=fields_sc, hedges_gdf=hedges_sc)
 
         for sp_name in species_list:
             sp_cfg = load_species_from_csv(sp_name, base_path=".")
+            weather_module, weather_start_date = build_weather_module_from_cfg(cfg)
 
             if "sanity_check_species" in globals() and callable(globals()["sanity_check_species"]):
                 globals()["sanity_check_species"](sp_cfg)
@@ -1223,6 +1023,11 @@ def run(*, cfg) -> None:
                         "flower_strip_share",
                         "skylark_plots",
                         "skylark_plot_area",
+                        "hedge_length_m",
+                        "hedge_quality_weighted_m",
+                        "hedge_quality_mean",
+                        "hedge_length_m_per_ha",
+                        "hedge_quality_weighted_m_per_ha",
                         "width_m",
                         "height_m",
                     ]
@@ -1237,13 +1042,28 @@ def run(*, cfg) -> None:
 
             if USE_YEAR_FEEDBACK:
                 res_years = run_years_with_feedback(
-                    fields_sc, rot_sc, mgmt_sc, sp_cfg, years=years_to_sim, N_init_first=n_init_first
+                    fields_sc,
+                    rot_sc,
+                    mgmt_sc,
+                    sp_cfg,
+                    years=years_to_sim,
+                    N_init_first=n_init_first,
+                    weather_module=weather_module,
+                    timeline_start_date=weather_start_date,
                 )
             else:
                 res_years = {}
-                for y in years_to_sim:
+                for year_idx, y in enumerate(years_to_sim):
                     dbg_days = [110, 130, 160, 200] if int(y) == int(YEAR_TO_SHOW) else None
-                    res_years[y] = sim.simulate(days=365, year=int(y), N_init=n_init_first, debug_days=dbg_days)
+                    res_years[y] = sim.simulate(
+                        days=365,
+                        year=int(y),
+                        N_init=n_init_first,
+                        debug_days=dbg_days,
+                        weather_module=weather_module,
+                        timeline_start_date=weather_start_date,
+                        timeline_day_offset=int(year_idx) * 365,
+                    )
 
                     ts = to_long_timeseries(res_years[y], sp_cfg.name, y, scenario=scen_name)
                     ydir = sp_outdir / f"year_{y}"
@@ -1261,12 +1081,19 @@ def run(*, cfg) -> None:
                 day_to_show=DAY_TO_SHOW,
             )
 
+            if weather_module is not None:
+                weather_log_path = weather_module.write_csv(sp_outdir / "weather_impact_log.csv")
+                print(f"[weather] log written: {weather_log_path}")
+
             # Quick population summary
             arr = max(1, int(sp_cfg.arrival_day)) - 1
             N_arrivals = [(res_years[y]["A_m"][arr, :] + res_years[y]["A_f"][arr, :]).sum() for y in years_to_sim]
             lam = [N_arrivals[i + 1] / max(N_arrivals[i], 1e-9) for i in range(len(N_arrivals) - 1)]
             print("Adults at arrival by year:", [int(x) for x in N_arrivals])
-            print("Lambda (year-to-year):", np.round(lam, 3), " mean:", round(float(np.mean(lam)), 3))
+            if lam:
+                print("Lambda (year-to-year):", np.round(lam, 3), " mean:", round(float(np.mean(lam)), 3))
+            else:
+                print("Lambda (year-to-year):", np.array([]), " mean: n/a (n_years < 2)")
 
             # Heatmaps (per scenario)
             if DO_HEATMAPS:

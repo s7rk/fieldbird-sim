@@ -104,3 +104,123 @@ scenarios:
 
 debug:
   debug_year_xfer: 1
+
+weather_module:
+  enabled: false
+  weather_csv: "dwd_hoexter_out/hoexter_kl_final_for_birdsim.csv"
+  seed: 42
+  start_date: null
+  missing_date_policy: "raise"
+
+  stress:
+    decay: 0.95
+    heat_threshold: 28.0
+    heat_scale: 10.0
+    cold_threshold: 5.0
+    cold_scale: 10.0
+    wet_threshold: 12.0
+    wet_scale: 20.0
+    wind_threshold: 12.0
+    wind_scale: 10.0
+    w_heat: 0.25
+    w_cold: 0.20
+    w_wet: 0.15
+    w_wind: 0.10
+    state_clip: 5.0
+
+  food:
+    decay: 0.90
+    sunshine_threshold_h: 4.0
+    sunshine_scale_h: 6.0
+    rain_optimal_mm: 4.0
+    rain_tolerance_mm: 8.0
+    w_sunshine: 0.20
+    w_moderate_rain: 0.15
+    heat_penalty_weight: 0.45
+    wet_penalty_weight: 0.40
+    state_clip: 5.0
+
+  habitat:
+    decay: 0.94
+    wetness_optimal_30d_mm: 90.0
+    wetness_tolerance_30d_mm: 80.0
+    storm_threshold: 16.0
+    storm_scale: 8.0
+    w_wet_balance: 0.20
+    w_stability: 0.15
+    storm_penalty_weight: 0.45
+    state_clip: 5.0
+
+  interactions:
+    drought_threshold_30d_mm: 50.0
+    drought_scale_30d_mm: 35.0
+    heat_drought_weight: 0.35
+    cold_wet_weight: 0.20
+    season_mode: "window"
+    breeding_start_doy: 95
+    breeding_end_doy: 205
+    season_strength: 0.85
+    add_to_stress_weight: 0.60
+    add_to_food_weight: 0.25
+    add_to_habitat_weight: 0.30
+
+  events:
+    heatwave:
+      enabled: true
+      threshold: 32.0
+      min_consecutive_days: 3
+      effect_duration_days: 4
+      trigger_probability: 1.0
+      shock_reproduction_mult: 0.80
+      shock_juvenile_survival_mult: 0.95
+      shock_adult_survival_mult: 0.99
+    heavy_rain:
+      enabled: true
+      threshold: 35.0
+      min_consecutive_days: 1
+      effect_duration_days: 2
+      trigger_probability: 1.0
+      shock_reproduction_mult: 0.88
+      shock_juvenile_survival_mult: 0.96
+      shock_adult_survival_mult: 0.995
+    storm:
+      enabled: true
+      threshold: 22.0
+      min_consecutive_days: 1
+      effect_duration_days: 3
+      trigger_probability: 1.0
+      shock_reproduction_mult: 0.85
+      shock_juvenile_survival_mult: 0.94
+      shock_adult_survival_mult: 0.992
+    cold_snap:
+      enabled: true
+      threshold: -2.0
+      min_consecutive_days: 2
+      effect_duration_days: 3
+      trigger_probability: 1.0
+      shock_reproduction_mult: 0.86
+      shock_juvenile_survival_mult: 0.95
+      shock_adult_survival_mult: 0.993
+
+  factors:
+    reproduction:
+      intercept: 0.35
+      stress_weight: 0.75
+      food_weight: 0.25
+      habitat_weight: 0.15
+      min: 0.90
+      max: 1.10
+    juvenile_survival:
+      intercept: 0.35
+      stress_weight: 0.55
+      food_weight: 0.12
+      habitat_weight: 0.10
+      min: 0.97
+      max: 1.03
+    adult_survival:
+      intercept: 0.40
+      stress_weight: 0.45
+      food_weight: 0.08
+      habitat_weight: 0.08
+      min: 0.995
+      max: 1.005
