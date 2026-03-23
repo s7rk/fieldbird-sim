@@ -1,0 +1,59 @@
+run:
+  use_synthetic: true
+  n_fields: 20
+  n_years: 10
+  year_to_show: 5
+  day_to_show: 160
+  species: ["Rebhuhn"]
+  n_init_first: 100
+  outdir_prefix: "outputs"
+  run_name: "landscape_20fields_cover_10y"
+
+plots:
+  do_maps: false
+  do_heatmaps: false
+  draw_flower_rings: true
+  draw_hedge_buffers: true
+  hedge_buffer_m: 5.0
+
+seeds:
+  fields: 2025
+  rotation: 2025
+  management: 2025
+  hedges: 2025
+  sim: 2025
+
+synthetic:
+  cover:
+    add_cover: true
+    cover_margin_m: 6
+    cover_min_patch_m2: 80
+    cover_fill_residual: true
+    square_pad_m: 8
+
+scenarios:
+  A:
+    enabled: false
+    shifts: [7, 14, 21]
+  B:
+    enabled: false
+    shares: [0.10, 0.20, 0.30]
+    fractions: [0.25, 0.50, 1.00]
+    select: "no_flower_first"
+    seed: 2025
+  C:
+    enabled: false
+    fallow_area_shares: [0.01, 0.05, 0.10]
+    apply_years: "all"
+    selection: "best_match"
+    seed: 2026
+  D:
+    enabled: false
+    add_skylark_plots: 2
+    skylark_plot_area: 0.02
+    target_fraction: 0.20
+    min_eligible_years: 1
+    only_without_flower: true
+
+weather_module:
+  enabled: false

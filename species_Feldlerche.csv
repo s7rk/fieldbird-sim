@@ -31,5 +31,5 @@ hedge_territory_area_bonus_ha_per_100m_per_ha,0.0
 hedge_effect_clip_100m_per_ha,4.0
 survival_mode,annual
 territory_size_ha, 1.5
-max_pairs_per_ha, 0.6
+max_pairs_per_ha, 0.5
 renest_cooldown_days, 5
