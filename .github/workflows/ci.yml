@@ -33,11 +33,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: CLI run smoke (runtime contract)
+      - name: CLI init smoke
         run: |
+          fieldbird-sim --version
           fieldbird-sim init /tmp/fieldbird-ci-smoke
-          cd /tmp/fieldbird-ci-smoke
-          fieldbird-sim run --config run.yml
 
       - name: Ruff
         run: ruff check .

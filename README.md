@@ -93,10 +93,10 @@ python -m pytest -q
 python -m build
 ```
 
-The maintained package, tests, and scripts are linted. Parts of the legacy
-simulation core are temporarily excluded from Ruff and are being migrated
-incrementally. See [Architecture](ARCHITECTURE.md) and
-[Contributing](CONTRIBUTING.md).
+The maintained package, active simulation core, tests, and scripts are linted.
+The active legacy modules have a narrow baseline for existing star-import and
+compact-statement patterns; all other Ruff checks remain enforced. See
+[Architecture](ARCHITECTURE.md) and [Contributing](CONTRIBUTING.md).
 
 ## Repository data policy
 

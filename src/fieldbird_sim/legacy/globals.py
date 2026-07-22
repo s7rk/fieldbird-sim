@@ -16,11 +16,10 @@ import math
 import os
 import pathlib
 import re
-from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 # Third-party
 import geopandas as gpd
@@ -1177,7 +1176,6 @@ def run_years_with_feedback(
     results_by_year: Dict[int, dict] = {}
     start_state = None
 
-    juv_log: List[dict] = []
     juv_qc_rows: List[dict] = []
 
     for year_idx, y in enumerate(years):

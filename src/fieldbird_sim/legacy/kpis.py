@@ -1,11 +1,5 @@
 from __future__ import annotations
 
-# ---- typing (optional) ----
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from fieldbird_sim.cli import RunConfig  # only for type hints, avoids runtime import cycles
-
 # ---- stdlib ----
 import math
 from dataclasses import replace
@@ -186,7 +180,12 @@ def compute_kpis_one_year(res: dict, cfg) -> dict:
     )
 
 
-def compute_kpis_from_results(results_by_year: dict, cfg) -> pd.DataFrame:
+def compute_kpis_from_results(
+    results_by_year: dict,
+    cfg,
+    *,
+    output_path: Path | None = None,
+) -> pd.DataFrame:
     """KPI-Tabelle je Jahr (inkl. λ zum Vorjahr und Kolonisationsrate)."""
     rows = []
     years = sorted(results_by_year.keys())
@@ -212,8 +211,11 @@ def compute_kpis_from_results(results_by_year: dict, cfg) -> pd.DataFrame:
         rows.append(k)
 
     df = pd.DataFrame(rows)
-    Path("analysis").mkdir(parents=True, exist_ok=True)
-    df.to_csv(Path("analysis") / "kpi_yearly.csv", index=False)
+    if output_path is None:
+        output_path = Path("analysis") / "kpi_yearly.csv"
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(output_path, index=False)
     return df
 
 
@@ -1165,7 +1167,11 @@ def run(*, cfg) -> None:
                         )
 
             # KPI
-            kpi_df = compute_kpis_from_results(res_years, sp_cfg)
+            kpi_df = compute_kpis_from_results(
+                res_years,
+                sp_cfg,
+                output_path=sp_outdir / "analysis" / "kpi_yearly.csv",
+            )
             print("\n[KPI] Jahres-Kennzahlen:\n", kpi_df)
 
             # store baseline for later delta step

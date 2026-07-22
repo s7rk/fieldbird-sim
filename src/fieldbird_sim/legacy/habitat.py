@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Tuple
+
 from .globals import *  # noqa: F401,F403
 
 #  (module 3/7) Habitat/utility functions  — robust version

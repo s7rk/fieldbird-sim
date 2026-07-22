@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI workflow for linting and tests on pull requests and pushes.
 - GitHub community and governance files (`LICENSE`, issue/PR templates, `SECURITY.md`, Dependabot config).
 - Additional smoke tests for config loading and CLI run dispatch.
+- Deterministic end-to-end regression coverage for the bundled starter project.
 - Optional weather impact module with:
   - daily weather CSV loader and date-based lookup
   - latent weather memory states (`stress_state`, `food_state`, `habitat_state`)
@@ -29,7 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   current working directory to be the source checkout.
 - CI now tests Python 3.10 through 3.13 and builds an installable wheel and source
   distribution.
-- Ruff is now scoped to maintained package and test code (legacy modules are excluded).
+- The active legacy simulation package now participates in Ruff with a narrow,
+  documented baseline for inherited structural patterns.
+- Species KPI tables are written to their respective result directories instead
+  of overwriting one shared working-directory file.
 - Weather module defaults were calibrated for mild daily survival impact (near 1.0) to avoid artificial population collapse/explosion.
 
 ## [0.1.0] - 2026-02-27

@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import replace
+from typing import Tuple
+
+import numpy as np
+import pandas as pd
+
 from .globals import *  # noqa: F401,F403
 
 #  (module 7/7) Scenarios, compare, main
@@ -125,10 +131,6 @@ def choose_skylark_target_fields(
     top = (df.sort_values(["score", "eligible_years"], ascending=False)
              .head(k))
     return top["field_id"].astype(int).tolist()
-
-from typing import Tuple
-import numpy as np
-import pandas as pd
 
 def apply_management_scenario(
     fields_df=None,
@@ -339,7 +341,7 @@ def apply_fallow_scenario(fields_df: pd.DataFrame,
             chosen = []
             chosen_area = 0.0
             for _, row in df_sorted.iterrows():
-                a = float(row["area"]);
+                a = float(row["area"])
                 fid = int(row["field_id"])
                 if abs((chosen_area + a) - target) <= abs(chosen_area - target):
                     chosen.append(fid)

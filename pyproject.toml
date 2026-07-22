@@ -94,5 +94,10 @@ line-length = 100
 target-version = "py310"
 extend-exclude = [
   "legacy_sim",
-  "src/fieldbird_sim/legacy",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# The maintained legacy package still relies on star-imported shared state and
+# compact one-line statements. Keep those known structural debts explicit while
+# allowing Ruff to catch every other error in the active simulation core.
+"src/fieldbird_sim/legacy/*.py" = ["E701", "E702", "F405"]

@@ -368,8 +368,6 @@ class BirdLandscapeSim:
         p_ref_nest = np.zeros(n, dtype=np.float32)
 
         for i, frow in self.fields.iterrows():
-            field_id = int(frow.field_id)
-
             # Kultur (aus Cache)
             crop = self._cache_crop[i]
             pref = self._pref_row(crop)

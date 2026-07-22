@@ -32,9 +32,10 @@ python -m build
 For packaging changes, also install the wheel in a fresh virtual environment and
 run a starter simulation outside the repository checkout.
 
-Ruff currently excludes `src/fieldbird_sim/legacy`. New modules and extracted
-legacy components should be lint-clean; exclusions should be narrowed rather than
-expanded.
+Ruff checks the active simulation core in `src/fieldbird_sim/legacy`. A narrow
+per-file baseline permits only its existing star-import and compact-statement
+patterns. New modules and extracted components should be fully lint-clean; the
+baseline must be narrowed rather than expanded.
 
 ## Branches and commits
 
