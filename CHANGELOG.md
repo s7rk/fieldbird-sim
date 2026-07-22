@@ -12,20 +12,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and dependency versions.
 - A guide for the optional analysis scripts and a project Code of Conduct.
 - Tests for provenance metadata and the source-tree version fallback.
+- Focused regression tests for KPI calculations, active scenario callbacks,
+  landscape geometry, plotting, species validation, and diagnostic logging.
 
 ### Changed
 - GitHub Actions are pinned to immutable commit SHAs.
 - Packaged species parameter files are now the single maintained source for
   repository runs and generated starter projects.
+- The enforced project coverage floor increased from 60% to 70%.
 
 ### Fixed
 - Source trees without installed package metadata no longer report the stale
   version `0.1.0`; they report `0+unknown` instead.
+- Reproduction/debug logging is now wired explicitly, including simulations
+  that run without annual population feedback.
+- Species parameters are validated before every simulation run.
 
 ### Removed
 - The unmaintained single-file simulation snapshot, its compatibility runner,
-  and duplicate root-level species parameter files. Historical versions remain
-  available through Git history and release tags.
+  an unused legacy module entry point, and duplicate root-level species
+  parameter files, plus a superseded scenario-helper module. Historical
+  versions remain available through Git history and release tags.
 
 ## [0.2.1] - 2026-07-22
 
