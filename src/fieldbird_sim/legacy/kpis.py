@@ -44,6 +44,7 @@ from .plot_controls import get_plot_controls
 from .hedge_setup import build_hedges_from_cfg, attach_hedge_metrics_to_fields
 from .scenario_plan import build_scenarios_to_run, apply_scenario_to_inputs
 from .weather_builder import build_weather_module_from_cfg
+from fieldbird_sim.resources import resolve_calendar_path, resolve_species_dir
 
 
 # =========================================================
@@ -887,12 +888,16 @@ def run(*, cfg) -> None:
 
         rotation = make_rotation(fields_gdf, years_to_sim, seed=int(cfg.seeds.rotation))
 
+        calendar_path = resolve_calendar_path(
+            str(cfg.management.calendar_path),
+            base_dir=getattr(cfg, "config_dir", None),
+        )
         management = make_management(
             fields_gdf,
             rotation,
             seed=int(cfg.seeds.management),
             use_calendar=bool(cfg.management.use_calendar),
-            calendar_path=str(cfg.management.calendar_path),
+            calendar_path=str(calendar_path),
             desync_region_sd=float(cfg.management.desync_region_sd),
             desync_field_sd=float(cfg.management.desync_field_sd),
             region_bins=int(cfg.management.region_bins),
@@ -997,7 +1002,12 @@ def run(*, cfg) -> None:
         fields_sc = attach_hedge_metrics_to_fields(fields_gdf=fields_sc, hedges_gdf=hedges_sc)
 
         for sp_name in species_list:
-            sp_cfg = load_species_from_csv(sp_name, base_path=".")
+            species_dir = resolve_species_dir(
+                sp_name,
+                configured_dir=getattr(cfg.run, "species_dir", None),
+                base_dir=getattr(cfg, "config_dir", None),
+            )
+            sp_cfg = load_species_from_csv(sp_name, base_path=species_dir)
             weather_module, weather_start_date = build_weather_module_from_cfg(cfg)
 
             if "sanity_check_species" in globals() and callable(globals()["sanity_check_species"]):

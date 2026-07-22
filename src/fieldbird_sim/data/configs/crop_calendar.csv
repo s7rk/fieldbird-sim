@@ -1,0 +1,8 @@
+crop,harvest_center,harvest_width,harvest_sd,harvest_win_span,sow_center,sow_width,other_prob,other_center,other_width,insect_prob,insect_center,insect_width
+Winterweizen,210,14,6,10,270,20,0.4,150,20,0.3,150,14
+Sommergerste,190,12,6,10,105,18,0.4,145,18,0.3,145,12
+Mais,250,20,8,12,120,15,0.2,170,20,0.2,190,18
+Raps,195,12,6,10,240,20,0.3,150,18,0.3,150,12
+Zuckerrübe,260,22,8,14,110,15,0.2,180,20,0.2,200,16
+Ackerbohne,200,12,6,10,100,20,0.3,150,16,0.2,155,12
+Brache,,,,,,,0.1,150,20,0.0,,

@@ -236,8 +236,6 @@ def create_metrics_plot(results: list[DatasetResult], output_path: Path) -> None
     r2 = [r.r2 for r in results]
 
     x = np.arange(len(labels))
-    width = 0.35
-
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
     ax_mae, ax_rmse, ax_r2 = axes
 

@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `fieldbird-sim init` for creating a self-contained editable starter project.
+- Bundled crop-calendar and species defaults in built distributions.
+- Installed-wheel smoke testing outside the repository checkout.
+- Public configuration guide and package metadata.
 - CI workflow for linting and tests on pull requests and pushes.
 - GitHub community and governance files (`LICENSE`, issue/PR templates, `SECURITY.md`, Dependabot config).
 - Additional smoke tests for config loading and CLI run dispatch.
@@ -21,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Weather-module smoke/behavior tests.
 
 ### Changed
+- Default runtime resources now fall back to packaged data instead of requiring the
+  current working directory to be the source checkout.
+- CI now tests Python 3.10 through 3.13 and builds an installable wheel and source
+  distribution.
 - Ruff is now scoped to maintained package and test code (legacy modules are excluded).
 - Weather module defaults were calibrated for mild daily survival impact (near 1.0) to avoid artificial population collapse/explosion.
 

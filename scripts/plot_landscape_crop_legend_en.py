@@ -72,6 +72,40 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Draw field IDs at centroids",
     )
+    parser.add_argument(
+        "--title",
+        type=str,
+        default=None,
+        help="Custom plot title. Use an empty string for no title.",
+    )
+    parser.add_argument(
+        "--hide-axes",
+        action="store_true",
+        help="Hide axis labels, ticks, and grid for poster figures.",
+    )
+    parser.add_argument(
+        "--no-legend",
+        action="store_true",
+        help="Do not draw the crop legend.",
+    )
+    parser.add_argument(
+        "--field-id-font-size",
+        type=float,
+        default=8.5,
+        help="Font size for field ID labels.",
+    )
+    parser.add_argument(
+        "--fig-width-cm",
+        type=float,
+        default=None,
+        help="Figure width in centimeters.",
+    )
+    parser.add_argument(
+        "--fig-height-cm",
+        type=float,
+        default=None,
+        help="Figure height in centimeters.",
+    )
     parser.add_argument("--dpi", type=int, default=240)
     return parser.parse_args()
 
@@ -124,6 +158,12 @@ def make_plot(
     all_crops_run: list[str],
     output_path: Path,
     show_field_ids: bool,
+    title: str | None,
+    hide_axes: bool,
+    no_legend: bool,
+    field_id_font_size: float,
+    fig_width_cm: float | None,
+    fig_height_cm: float | None,
     dpi: int,
 ) -> None:
     rot_year = rotation_df.loc[rotation_df["year"] == year, ["field_id", "crop"]].copy()
@@ -148,7 +188,13 @@ def make_plot(
             palette[crop] = tab20[i % len(tab20)]
             i += 1
 
-    fig, ax = plt.subplots(figsize=(14, 8))
+    exact_canvas = fig_width_cm is not None and fig_height_cm is not None
+    figsize = (
+        (fig_width_cm / 2.54, fig_height_cm / 2.54)
+        if exact_canvas
+        else (14, 8)
+    )
+    fig, ax = plt.subplots(figsize=figsize)
     fg.plot(
         ax=ax,
         facecolor=fg["crop_de"].map(palette),
@@ -168,7 +214,7 @@ def make_plot(
                 str(int(fid)),
                 ha="center",
                 va="center",
-                fontsize=8.5,
+                fontsize=field_id_font_size,
                 color="#111111",
                 weight="bold",
                 bbox={
@@ -180,46 +226,63 @@ def make_plot(
                 zorder=6,
             )
 
-    crop_counts = fg["crop_de"].value_counts()
-    legend_crops = sorted(
-        all_crops_run,
-        key=lambda c: CROP_TRANSLATIONS.get(c, c).lower(),
-    )
-    handles = []
-    for crop_de in legend_crops:
-        count = int(crop_counts.get(crop_de, 0))
-        crop_en = CROP_TRANSLATIONS.get(crop_de, crop_de)
-        handles.append(
-            Patch(
-                facecolor=palette[crop_de],
-                edgecolor="black",
-                label=f"{crop_en} ({int(count)})",
+    if not no_legend:
+        crop_counts = fg["crop_de"].value_counts()
+        legend_crops = sorted(
+            all_crops_run,
+            key=lambda c: CROP_TRANSLATIONS.get(c, c).lower(),
+        )
+        handles = []
+        for crop_de in legend_crops:
+            count = int(crop_counts.get(crop_de, 0))
+            crop_en = CROP_TRANSLATIONS.get(crop_de, crop_de)
+            handles.append(
+                Patch(
+                    facecolor=palette[crop_de],
+                    edgecolor="black",
+                    label=f"{crop_en} ({int(count)})",
+                )
             )
+
+        ax.legend(
+            handles=handles,
+            title="Crop Types",
+            loc="center left",
+            bbox_to_anchor=(1.02, 0.5),
+            frameon=True,
+            fontsize=10,
+            title_fontsize=11,
+            borderaxespad=0.0,
         )
 
-    ax.legend(
-        handles=handles,
-        title="Crop Types",
-        loc="center left",
-        bbox_to_anchor=(1.02, 0.5),
-        frameon=True,
-        fontsize=10,
-        title_fontsize=11,
-        borderaxespad=0.0,
-    )
+    if title is None:
+        title = f"Landscape by Crop Type (Year {year})\nSpecies: {species}"
+    if title:
+        ax.set_title(title, fontsize=13)
 
-    ax.set_title(
-        f"Landscape by Crop Type (Year {year})\nSpecies: {species}",
-        fontsize=13,
-    )
-    ax.set_xlabel("x (m)")
-    ax.set_ylabel("y (m)")
+    ax.set_xlabel("" if hide_axes else "x (m)")
+    ax.set_ylabel("" if hide_axes else "y (m)")
     ax.set_aspect("equal", adjustable="box")
-    ax.grid(alpha=0.15)
+    ax.margins(x=0.03, y=0.03)
+    if hide_axes:
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.grid(False)
+    else:
+        ax.grid(alpha=0.15)
 
-    fig.tight_layout()
+    if exact_canvas:
+        # Keep the requested poster frame dimensions exactly; reserve space
+        # on the right for the external legend.
+        right = 0.76 if not no_legend else 0.96
+        fig.subplots_adjust(left=0.08, right=right, bottom=0.14, top=0.95)
+    else:
+        fig.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
+    if exact_canvas:
+        fig.savefig(output_path, dpi=dpi)
+    else:
+        fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -252,6 +315,12 @@ def main() -> None:
         all_crops_run=sorted(rotation_df["crop"].dropna().astype(str).unique()),
         output_path=output,
         show_field_ids=args.show_field_ids,
+        title=args.title,
+        hide_axes=args.hide_axes,
+        no_legend=args.no_legend,
+        field_id_font_size=args.field_id_font_size,
+        fig_width_cm=args.fig_width_cm,
+        fig_height_cm=args.fig_height_cm,
         dpi=args.dpi,
     )
     print(f"[ok] Saved plot: {output.resolve()}")
