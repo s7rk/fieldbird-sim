@@ -19,6 +19,10 @@ def bundled_template_path() -> Path:
     return PACKAGE_DATA_DIR / "templates" / "run.yml"
 
 
+def bundled_starter_readme_path() -> Path:
+    return PACKAGE_DATA_DIR / "templates" / "README.md"
+
+
 def _relative_candidates(path: Path, *, base_dir: Path | None) -> list[Path]:
     if path.is_absolute():
         return [path]
@@ -88,6 +92,7 @@ def create_starter_project(target_dir: Path, *, force: bool = False) -> list[Pat
     target_dir.mkdir(parents=True, exist_ok=True)
 
     sources = {
+        "README.md": bundled_starter_readme_path(),
         "run.yml": bundled_template_path(),
         "crop_calendar.csv": bundled_calendar_path(),
     }

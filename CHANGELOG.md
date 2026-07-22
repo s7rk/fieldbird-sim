@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A complete hands-on guide covering installation, first use, parameter experiments,
+  results, reproducibility, and troubleshooting.
+- A local README in every generated starter project.
+- A Windows installed-package simulation smoke test in GitHub Actions.
+- Focused behavioral tests for habitat and management-scenario logic.
+- A 60% project-wide coverage floor to prevent regression of the hardened test baseline.
+
+### Fixed
+- Scenario field selection now accepts input tables without an optional
+  `flower_strip_share` column.
+- Habitat helpers now import their CSV and date-window dependencies explicitly.
+
+### Changed
+- Removed unreachable legacy scenario code that could no longer be executed.
+
 ## [0.2.0] - 2026-07-22
 
 ### Added
