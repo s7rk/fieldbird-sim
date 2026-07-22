@@ -3,7 +3,8 @@ message: "If you use fieldbird-sim in research, please cite the software and the
 title: "fieldbird-sim"
 type: software
 authors:
-  - name: "fieldbird-sim contributors"
+  - family-names: "Kurth"
+    given-names: "Robin"
 version: 0.1.0
 repository-code: "https://github.com/s7rk/fieldbird-sim"
 url: "https://github.com/s7rk/fieldbird-sim"
