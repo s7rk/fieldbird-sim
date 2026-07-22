@@ -38,6 +38,7 @@ from .plot_controls import get_plot_controls
 from .hedge_setup import build_hedges_from_cfg, attach_hedge_metrics_to_fields
 from .scenario_plan import build_scenarios_to_run, apply_scenario_to_inputs
 from .weather_builder import build_weather_module_from_cfg
+from .debug_utils import sanity_check_species
 from fieldbird_sim.resources import resolve_calendar_path, resolve_species_dir
 
 
@@ -1012,8 +1013,7 @@ def run(*, cfg) -> None:
             sp_cfg = load_species_from_csv(sp_name, base_path=species_dir)
             weather_module, weather_start_date = build_weather_module_from_cfg(cfg)
 
-            if "sanity_check_species" in globals() and callable(globals()["sanity_check_species"]):
-                globals()["sanity_check_species"](sp_cfg)
+            sanity_check_species(sp_cfg)
 
             print(
                 "SPECIES:",

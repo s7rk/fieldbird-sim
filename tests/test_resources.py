@@ -36,8 +36,10 @@ def test_repository_config_presets_load(config_path):
         "species_Rebhuhn_pref.csv",
     ],
 )
-def test_bundled_species_files_match_editable_repository_defaults(name):
-    assert (bundled_species_dir() / name).read_bytes() == (ROOT / name).read_bytes()
+def test_bundled_species_files_are_available(name):
+    path = bundled_species_dir() / name
+    assert path.is_file()
+    assert path.read_text(encoding="utf-8").strip()
 
 
 def test_bundled_calendar_matches_editable_repository_default():

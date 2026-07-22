@@ -9,6 +9,7 @@ from typing import Dict, Optional
 import numpy as np
 
 from .globals import *  # noqa: F401,F403
+from .debug_utils import DebugTracer, ReproLogger
 from .layout import parse_days, parse_window, in_window
 from .habitat import measure_modifiers, food_index, cover_index, softmax
 from .species import clutch_multiplier_for

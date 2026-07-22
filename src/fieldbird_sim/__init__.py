@@ -1,10 +1,14 @@
-from importlib.metadata import PackageNotFoundError, version
+from importlib import metadata
 
 
-try:
-    __version__ = version("fieldbird-sim")
-except PackageNotFoundError:  # pragma: no cover - source tree without installation metadata
-    __version__ = "0.1.0"
+def _read_version() -> str:
+    try:
+        return metadata.version("fieldbird-sim")
+    except metadata.PackageNotFoundError:
+        return "0+unknown"
+
+
+__version__ = _read_version()
 
 
 __all__ = ["__version__"]
