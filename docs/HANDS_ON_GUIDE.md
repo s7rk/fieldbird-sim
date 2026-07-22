@@ -65,7 +65,7 @@ and then activate again:
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
-A successful installation prints `fieldbird-sim 0.2.1` or a newer version. Keep the
+A successful installation prints `fieldbird-sim 0.2.2` or a newer version. Keep the
 environment activated while using the program. Later, reactivate it with
 `source .venv/bin/activate` on macOS/Linux or `.\.venv\Scripts\Activate.ps1` on
 Windows.
@@ -78,11 +78,11 @@ page. Create and activate a virtual environment as shown above, open a terminal 
 the download directory, and install the downloaded file:
 
 ```bash
-python -m pip install fieldbird_sim-0.2.1-py3-none-any.whl
+python -m pip install fieldbird_sim-0.2.2-py3-none-any.whl
 fieldbird-sim --version
 ```
 
-Replace `0.2.1` with the downloaded version. The wheel contains the starter
+Replace `0.2.2` with the downloaded version. The wheel contains the starter
 configuration and editable parameter files; Git is not required for this route.
 
 ## 3. Create your simulation project

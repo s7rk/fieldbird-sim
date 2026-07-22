@@ -5,7 +5,7 @@ type: software
 authors:
   - family-names: "Kurth"
     given-names: "Robin"
-version: 0.2.1
+version: 0.2.2
 date-released: 2026-07-22
 repository-code: "https://github.com/s7rk/fieldbird-sim"
 url: "https://github.com/s7rk/fieldbird-sim"
