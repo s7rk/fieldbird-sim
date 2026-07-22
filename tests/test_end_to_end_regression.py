@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -8,6 +9,7 @@ import sys
 import pandas as pd
 import pytest
 
+from fieldbird_sim import __version__
 from fieldbird_sim.resources import create_starter_project
 
 
@@ -59,4 +61,13 @@ def test_starter_project_produces_deterministic_species_kpis(tmp_path: Path) -> 
         assert kpis.loc[kpis["year"] == 2, "lambda_prev"].item() == pytest.approx(
             expected["lambda_year_2"]
         )
+
+        meta_path = kpi_path.parents[1] / "run_meta.json"
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        runtime = meta["runtime"]
+        assert runtime["fieldbird_sim_version"] == __version__
+        assert runtime["python_version"]
+        assert runtime["python_implementation"]
+        assert runtime["platform"]
+        assert runtime["dependencies"]["pandas"] == pd.__version__
     assert not (project_dir / "analysis" / "kpi_yearly.csv").exists()

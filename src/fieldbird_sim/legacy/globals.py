@@ -29,6 +29,8 @@ import pandas as pd
 from shapely.geometry import box
 from shapely.ops import unary_union
 
+from fieldbird_sim.provenance import runtime_metadata
+
 # ------------------- Global controls -------------------
 
 TOT_DAYS = 365  # zentrale Referenz für Jahr-Länge (Index = DOY)
@@ -617,7 +619,12 @@ def save_run_bundle(
     fields_flat = fields_gdf.drop(columns=[c for c in ["geometry"] if c in fields_gdf.columns]).copy()
 
     max_day = int(globals().get("TOT_DAYS", 365))
-    meta = {"species": species_name, "years": list(results_by_year.keys()), "day_to_show": int(max(1, min(int(day_to_show), max_day)))}
+    meta = {
+        "species": species_name,
+        "years": list(results_by_year.keys()),
+        "day_to_show": int(max(1, min(int(day_to_show), max_day))),
+        "runtime": runtime_metadata(),
+    }
     (outdir / "run_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
     # Per year arrays

@@ -15,8 +15,6 @@ The architecture intentionally uses **one orchestration file** and **thematic he
 ### Entrypoints
 
 - `src/fieldbird_sim/cli.py`: CLI, config parsing, `fieldbird-sim run`.
-- `scripts/run.py`: unsupported compatibility wrapper for the archived monolith
-  in `legacy_sim/`; it is not part of the public CLI.
 
 ### Simulation Orchestration
 
@@ -37,6 +35,8 @@ The architecture intentionally uses **one orchestration file** and **thematic he
 - `src/fieldbird_sim/legacy/scenario_plan.py`:
   - scenario list creation
   - scenario dispatch (`apply_scenario_to_inputs`)
+- `src/fieldbird_sim/provenance.py`:
+  - record simulator, Python, platform, and dependency versions in run metadata
 
 ### Domain/Core Modules
 
@@ -94,9 +94,5 @@ Optional next step (only if needed): move `apply_scenario_A/B/C/D_*` from `kpis.
 - Integration/smoke via CLI run (`fieldbird-sim run --config ...`)
 - CI gate: `ruff` + `pytest`
 
-## Archived Reference Implementation
-
-`legacy_sim/trash.py` is retained only as a historical single-file reference.
-It is not packaged, linted, or invoked by `fieldbird-sim run`. The active
-simulation core is `src/fieldbird_sim/legacy/`; despite its namespace, it is
-part of the maintained package and participates in the lint and test gates.
+Historical pre-package implementations remain available through Git history and
+release tags, but the current tree contains only maintained runtime code.

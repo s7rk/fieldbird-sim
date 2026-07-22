@@ -80,7 +80,8 @@ the [configuration guide](docs/CONFIGURATION.md) for the parameter reference.
 All stochastic components have explicit seeds in the YAML configuration. Keep the
 configuration and the generated parameter CSV files together when sharing a run.
 The output directory contains data snapshots and diagnostics intended to make a run
-auditable.
+auditable. Each species directory also contains `run_meta.json` with the simulator,
+Python, platform, and runtime-dependency versions used for that run.
 
 ## Optional weather input
 
@@ -104,7 +105,8 @@ python -m build
 The maintained package, active simulation core, tests, and scripts are linted.
 The active legacy modules have a narrow baseline for existing star-import and
 compact-statement patterns; all other Ruff checks remain enforced. See
-[Architecture](ARCHITECTURE.md) and [Contributing](CONTRIBUTING.md).
+[Architecture](ARCHITECTURE.md), [Contributing](CONTRIBUTING.md), and the
+[optional analysis-script guide](scripts/README.md).
 
 ## Repository data policy
 
@@ -116,7 +118,8 @@ plots, model artifacts, and backups are not intended for version control.
 
 The project is released under the [MIT License](LICENSE). Please report security
 issues through a private GitHub security advisory as described in
-[SECURITY.md](SECURITY.md).
+[SECURITY.md](SECURITY.md). Participation in the project is governed by the
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
 For research use, citation metadata is provided in [CITATION.cff](CITATION.cff).
 Maintainers can follow the [release checklist](docs/RELEASING.md) before publishing

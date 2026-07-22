@@ -2,6 +2,8 @@
 
 Thanks for contributing to `fieldbird-sim`.
 
+By participating, you agree to follow the project [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Development setup
 
 ```bash

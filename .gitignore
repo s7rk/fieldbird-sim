@@ -31,13 +31,9 @@ outputs/
 results/
 analysis/
 artifacts/
-legacy_sim/analysis/
 
 # Local, instance-specific inputs
 inputs/
-
-# Legacy workspace copies of species tables
-legacy_sim/species_*.csv
 
 # Generated data and logs
 *.parquet

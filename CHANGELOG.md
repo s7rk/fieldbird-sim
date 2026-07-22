@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Runtime provenance in `run_meta.json`, including simulator, Python, platform,
+  and dependency versions.
+- A guide for the optional analysis scripts and a project Code of Conduct.
+- Tests for provenance metadata and the source-tree version fallback.
+
+### Changed
+- GitHub Actions are pinned to immutable commit SHAs.
+- Packaged species parameter files are now the single maintained source for
+  repository runs and generated starter projects.
+
+### Fixed
+- Source trees without installed package metadata no longer report the stale
+  version `0.1.0`; they report `0+unknown` instead.
+
+### Removed
+- The unmaintained single-file simulation snapshot, its compatibility runner,
+  and duplicate root-level species parameter files. Historical versions remain
+  available through Git history and release tags.
+
 ## [0.2.1] - 2026-07-22
 
 ### Added
