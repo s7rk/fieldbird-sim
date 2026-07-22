@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use fieldbird-sim in research, please cite the software and the corresponding study or release."
+title: "fieldbird-sim"
+type: software
+authors:
+  - family-names: "Kurth"
+    given-names: "Robin"
+version: 0.1.0
+repository-code: "https://github.com/s7rk/fieldbird-sim"
+url: "https://github.com/s7rk/fieldbird-sim"
+license: MIT

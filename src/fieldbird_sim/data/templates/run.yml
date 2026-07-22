@@ -1,0 +1,49 @@
+# Editable starter configuration for fieldbird-sim.
+# Run from this directory with: fieldbird-sim run --config run.yml
+
+run:
+  use_synthetic: true
+  n_fields: 20
+  n_years: 2
+  year_to_show: 1
+  day_to_show: 160
+  species: ["Feldlerche", "Rebhuhn"]
+  species_dir: "."
+  n_init_first: 100
+  outdir_prefix: "outputs"
+  run_name: "my_simulation"
+
+plots:
+  do_maps: false
+  do_heatmaps: false
+  draw_flower_rings: true
+  draw_hedge_buffers: true
+  hedge_buffer_m: 5.0
+
+seeds:
+  fields: 2025
+  rotation: 2025
+  management: 2025
+  hedges: 2025
+  sim: 2025
+
+management:
+  use_calendar: true
+  calendar_path: "crop_calendar.csv"
+
+hedges:
+  from_csv: false
+  p_edge: 0.7
+
+scenarios:
+  A:
+    enabled: false
+  B:
+    enabled: false
+  C:
+    enabled: false
+  D:
+    enabled: false
+
+weather_module:
+  enabled: false

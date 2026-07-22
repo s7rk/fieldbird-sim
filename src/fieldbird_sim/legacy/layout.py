@@ -7,6 +7,7 @@ import math
 import matplotlib
 from .globals import *  # noqa: F401,F403
 from pathlib import Path
+from typing import Optional, Tuple
 
 
 #  (module 2/7) Parsers, layout, hedges, plots
@@ -106,8 +107,7 @@ def parse_window(x) -> Optional[Tuple[int, int]]:
       - dict with keys {"start","end"} or {"a","b"}
     Returns (min(a,b), max(a,b)) or None on failure.
     """
-    import math, re
-    import numpy as np
+    import re
 
     # helpers
     def _clamp(v: float) -> int:

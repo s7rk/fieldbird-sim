@@ -1,11 +1,5 @@
 from __future__ import annotations
 
-# ---- typing (optional) ----
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from fieldbird_sim.cli import RunConfig  # only for type hints, avoids runtime import cycles
-
 # ---- stdlib ----
 import math
 from dataclasses import replace
@@ -44,6 +38,7 @@ from .plot_controls import get_plot_controls
 from .hedge_setup import build_hedges_from_cfg, attach_hedge_metrics_to_fields
 from .scenario_plan import build_scenarios_to_run, apply_scenario_to_inputs
 from .weather_builder import build_weather_module_from_cfg
+from fieldbird_sim.resources import resolve_calendar_path, resolve_species_dir
 
 
 # =========================================================
@@ -185,7 +180,12 @@ def compute_kpis_one_year(res: dict, cfg) -> dict:
     )
 
 
-def compute_kpis_from_results(results_by_year: dict, cfg) -> pd.DataFrame:
+def compute_kpis_from_results(
+    results_by_year: dict,
+    cfg,
+    *,
+    output_path: Path | None = None,
+) -> pd.DataFrame:
     """KPI-Tabelle je Jahr (inkl. λ zum Vorjahr und Kolonisationsrate)."""
     rows = []
     years = sorted(results_by_year.keys())
@@ -211,8 +211,11 @@ def compute_kpis_from_results(results_by_year: dict, cfg) -> pd.DataFrame:
         rows.append(k)
 
     df = pd.DataFrame(rows)
-    Path("analysis").mkdir(parents=True, exist_ok=True)
-    df.to_csv(Path("analysis") / "kpi_yearly.csv", index=False)
+    if output_path is None:
+        output_path = Path("analysis") / "kpi_yearly.csv"
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(output_path, index=False)
     return df
 
 
@@ -887,12 +890,16 @@ def run(*, cfg) -> None:
 
         rotation = make_rotation(fields_gdf, years_to_sim, seed=int(cfg.seeds.rotation))
 
+        calendar_path = resolve_calendar_path(
+            str(cfg.management.calendar_path),
+            base_dir=getattr(cfg, "config_dir", None),
+        )
         management = make_management(
             fields_gdf,
             rotation,
             seed=int(cfg.seeds.management),
             use_calendar=bool(cfg.management.use_calendar),
-            calendar_path=str(cfg.management.calendar_path),
+            calendar_path=str(calendar_path),
             desync_region_sd=float(cfg.management.desync_region_sd),
             desync_field_sd=float(cfg.management.desync_field_sd),
             region_bins=int(cfg.management.region_bins),
@@ -997,7 +1004,12 @@ def run(*, cfg) -> None:
         fields_sc = attach_hedge_metrics_to_fields(fields_gdf=fields_sc, hedges_gdf=hedges_sc)
 
         for sp_name in species_list:
-            sp_cfg = load_species_from_csv(sp_name, base_path=".")
+            species_dir = resolve_species_dir(
+                sp_name,
+                configured_dir=getattr(cfg.run, "species_dir", None),
+                base_dir=getattr(cfg, "config_dir", None),
+            )
+            sp_cfg = load_species_from_csv(sp_name, base_path=species_dir)
             weather_module, weather_start_date = build_weather_module_from_cfg(cfg)
 
             if "sanity_check_species" in globals() and callable(globals()["sanity_check_species"]):
@@ -1155,7 +1167,11 @@ def run(*, cfg) -> None:
                         )
 
             # KPI
-            kpi_df = compute_kpis_from_results(res_years, sp_cfg)
+            kpi_df = compute_kpis_from_results(
+                res_years,
+                sp_cfg,
+                output_path=sp_outdir / "analysis" / "kpi_yearly.csv",
+            )
             print("\n[KPI] Jahres-Kennzahlen:\n", kpi_df)
 
             # store baseline for later delta step

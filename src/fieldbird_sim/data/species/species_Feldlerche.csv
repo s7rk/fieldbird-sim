@@ -1,0 +1,35 @@
+param,value
+name,Feldlerche
+breeding_window_start,105
+breeding_window_end,200
+arrival_day,90
+departure_day,300
+move_radius,3.0
+beta,3.0
+distance_cost,0.12
+breeding_move_multiplier,0.4
+survival_breeding,0.8124
+survival_nonbreeding,0.8124
+survival_juvenile,0.32
+fec_scale,0.35
+nest_cycle_days,25
+base_nest_survival_day,0.97
+nest_disturb_sensitivity,0.28
+clutch_size,3.4
+fledge_rate,0.82
+max_broods_per_female,3
+juvenile_free_age,21
+alpha_density,0.002
+density_affects_start,TRUE
+benefits_from_skylark_windows, TRUE
+nest_refuge_gamma,0.25
+hedge_effect_enabled,TRUE
+hedge_food_bonus_per_100m_per_ha,0.05
+hedge_cover_bonus_per_100m_per_ha,0.00
+hedge_attractiveness_bias_per_100m_per_ha,-0.20
+hedge_territory_area_bonus_ha_per_100m_per_ha,0.0
+hedge_effect_clip_100m_per_ha,4.0
+survival_mode,annual
+territory_size_ha, 1.5
+max_pairs_per_ha, 0.5
+renest_cooldown_days, 5

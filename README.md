@@ -1,113 +1,115 @@
 # fieldbird-sim
 
-Field bird population simulation, currently focused on wrapping and stabilizing a legacy simulation pipeline in a reusable Python package structure.
+`fieldbird-sim` is a configurable field-bird population simulator for synthetic or
+CSV-defined agricultural landscapes. The current model includes Skylark
+(`Feldlerche`) and Grey Partridge (`Rebhuhn`), configurable management scenarios,
+hedges, and an optional weather-impact module.
 
-## Current status
+> **Project status:** research software, alpha. The simulator is suitable for
+> reproducible experiments and method development. Model output should not be
+> interpreted as a validated population forecast without an application-specific
+> calibration and uncertainty assessment.
 
-This repository is **work in progress**:
+## Quick start
 
-- A package/CLI wrapper exists in `src/fieldbird_sim`.
-- The simulation core still lives mostly in legacy modules.
-- CI checks (`ruff` + `pytest`) run on every push and pull request.
-
-## Installation
-
-### Runtime (simulation only)
+Python 3.10 or newer is required.
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -e .
+git clone https://github.com/s7rk/fieldbird-sim.git
+cd fieldbird-sim
+
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+python -m pip install --upgrade pip
+pip install .
 ```
 
-### Developer (runtime + test/lint)
+Create a self-contained, editable simulation directory:
 
 ```bash
-python3 -m venv .venv
+fieldbird-sim init my-simulation
+cd my-simulation
+fieldbird-sim run --config run.yml
+```
+
+Results are written to `outputs/my_simulation/`. The generated directory contains:
+
+- `run.yml` — landscape, runtime, scenario, seed, plotting, and weather settings
+- `species_Feldlerche.csv` and `species_Rebhuhn.csv` — demographic parameters
+- `species_*_pref.csv` — crop preferences and breeding-window weights
+- `crop_calendar.csv` — crop management timing and probabilities
+
+Edit these files with a text editor or spreadsheet application, then run the same
+command again. Existing starter files are never overwritten unless `--force` is
+passed to `fieldbird-sim init`.
+
+## Run a repository preset
+
+From a source checkout, a short baseline run is available as:
+
+```bash
+fieldbird-sim run --config configs/run_20fields_quick.yml
+```
+
+Additional presets cover longer runs, two-species runs, and CSV-defined landscapes.
+See [Configuration](docs/CONFIGURATION.md) for the parameter reference and examples.
+
+## What can be configured?
+
+- number of fields and simulation years
+- species and initial population
+- deterministic random seeds
+- synthetic versus CSV-defined landscapes
+- crop management calendar and field operations
+- hedges and permanent-cover habitat
+- management scenarios A–D
+- maps, heatmaps, and output locations
+- optional daily weather effects and event shocks
+- species demography, movement, reproduction, survival, and crop preferences
+
+## Reproducibility
+
+All stochastic components have explicit seeds in the YAML configuration. Keep the
+configuration and the generated parameter CSV files together when sharing a run.
+The output directory contains data snapshots and diagnostics intended to make a run
+auditable.
+
+## Optional weather input
+
+Set `weather_module.enabled: true` and provide `weather_module.weather_csv` in the
+YAML file. Weather input is deliberately not bundled because it is location- and
+study-specific. Missing dates, interaction terms, seasonal sensitivity, and event
+shocks are configurable.
+
+## Development
+
+```bash
+python -m venv .venv
 source .venv/bin/activate
-pip install -U pip
 pip install -e ".[dev]"
-```
 
-`fieldbird-sim run` works with the base install (`pip install -e .`).
-
-## Run the simulation
-
-### Recommended
-
-```bash
-fieldbird-sim run --config configs/run_default.yml
-```
-
-### Optional legacy helper (for debugging old pipeline behavior)
-
-```bash
-python scripts/run.py
-```
-
-## Configuration
-
-Default run configuration is provided in:
-
-- `configs/run_default.yml`
-
-Main options:
-
-- `run.use_synthetic`
-- `run.n_fields`
-- `run.n_years`
-- `run.year_to_show`
-- `run.day_to_show`
-- `seeds.*`
-- `weather_module.enabled` (optional nonlinear weather impacts)
-- `weather_module.weather_csv`
-
-## Data files in this repository
-
-Included (versioned):
-- `species_Feldlerche.csv`
-- `species_Feldlerche_pref.csv`
-- `species_Rebhuhn.csv`
-- `species_Rebhuhn_pref.csv`
-- `configs/crop_calendar.csv`
-
-Not included by default:
-- `inputs/*.csv` (only needed when using `run.use_synthetic: false`)
-
-## Development checks
-
-```bash
 ruff check .
 python -m pytest -q
+python -m build
 ```
 
-`ruff` is intentionally scoped to maintained package and test code. Legacy simulation modules are excluded for now and will be migrated incrementally.
+The maintained package, active simulation core, tests, and scripts are linted.
+The active legacy modules have a narrow baseline for existing star-import and
+compact-statement patterns; all other Ruff checks remain enforced. See
+[Architecture](ARCHITECTURE.md) and [Contributing](CONTRIBUTING.md).
 
-## Weather impact module (optional)
+## Repository data policy
 
-When `weather_module.enabled: true`, the simulation loads daily weather, updates latent weather-memory states (`stress_state`, `food_state`, `habitat_state`), and applies bounded nonlinear impact factors to:
+Small parameter tables and example configurations required for a default simulation
+are versioned. Local CSV landscape inputs, weather datasets, generated outputs,
+plots, model artifacts, and backups are not intended for version control.
 
-- reproduction probability
-- juvenile daily survival
-- adult daily survival
+## License and security
 
-The module also supports interaction terms (e.g. `heat*drought`, `cold*wet`) and season weighting (`weather_module.interactions`).
+The project is released under the [MIT License](LICENSE). Please report security
+issues through a private GitHub security advisory as described in
+[SECURITY.md](SECURITY.md).
 
-Phase 4 adds configurable event shocks (`weather_module.events`) for `heatwave`, `heavy_rain`, `storm`, and `cold_snap` with threshold/streak triggers, event duration, optional trigger probability, and temporary multiplicative effects on reproduction and survival factors.
-
-The module writes per-step diagnostics to `weather_impact_log.csv` in each species run output directory.
-
-## Governance and community files
-
-- `LICENSE` (MIT)
-- `CONTRIBUTING.md`
-- `SECURITY.md`
-- `CHANGELOG.md`
-- `.github/ISSUE_TEMPLATE/*`
-- `.github/PULL_REQUEST_TEMPLATE.md`
-- `.github/dependabot.yml`
-
-## Releases
-
-This project uses Semantic Versioning. User-facing changes should be added to `CHANGELOG.md` under `Unreleased` and released via tagged versions.
+For research use, citation metadata is provided in [CITATION.cff](CITATION.cff).
+Maintainers can follow the [release checklist](docs/RELEASING.md) before publishing
+a version.

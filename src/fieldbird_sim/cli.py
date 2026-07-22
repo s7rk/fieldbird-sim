@@ -4,8 +4,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 import argparse
+import sys
 
 import yaml
+
+from fieldbird_sim import __version__
 
 
 # ----------------------------
@@ -24,6 +27,7 @@ class RunSection:
     outdir_prefix: str = "outputs"
     run_name: str | None = None
     species: tuple[str, ...] | None = None  # if None -> defaults in globals.py
+    species_dir: str | None = None
     n_init_first: int = 100
 
 
@@ -342,6 +346,7 @@ class RunConfig:
     debug: DebugSection = DebugSection()
     weather_module: WeatherModuleSection = WeatherModuleSection()
     raw: dict[str, Any] | None = None
+    config_dir: Path = Path(".")
 
 
 # ----------------------------
@@ -410,6 +415,7 @@ def load_run_config(path: Path) -> RunConfig:
             outdir_prefix=str(_dget(run_d, "outdir_prefix", "outputs")),
             run_name=_dget(run_d, "run_name", None),
             species=species_tuple,
+            species_dir=_dget(run_d, "species_dir", None),
             n_init_first=int(_dget(run_d, "n_init_first", 100)),
         ),
         plots=PlotSection(
@@ -704,6 +710,7 @@ def load_run_config(path: Path) -> RunConfig:
             ),
         ),
         raw=data,
+        config_dir=path.resolve().parent,
     )
 
     return cfg
@@ -715,10 +722,22 @@ def load_run_config(path: Path) -> RunConfig:
 
 def main(argv: Optional[list[str]] = None) -> int:
     p = argparse.ArgumentParser(prog="fieldbird-sim")
+    p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("run", help="Run simulation (YAML-only)")
     r.add_argument("--config", type=Path, required=True, help="Path to YAML config")
+
+    init = sub.add_parser(
+        "init",
+        help="Create an editable starter configuration and parameter files",
+    )
+    init.add_argument("directory", type=Path, help="Directory to create or populate")
+    init.add_argument(
+        "--force",
+        action="store_true",
+        help="Replace existing starter files in the target directory",
+    )
 
     a = p.parse_args(argv)
 
@@ -727,6 +746,23 @@ def main(argv: Optional[list[str]] = None) -> int:
 
         from fieldbird_sim.legacy.kpis import run as run_legacy
         run_legacy(cfg=cfg)
+        return 0
+
+    if a.cmd == "init":
+        from fieldbird_sim.resources import create_starter_project
+
+        try:
+            written = create_starter_project(a.directory, force=a.force)
+        except FileExistsError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        target = a.directory.expanduser().resolve()
+        print(f"Created fieldbird-sim starter project: {target}")
+        for path in written:
+            print(f"  - {path.name}")
+        print("\nNext steps:")
+        print(f'  cd "{target}"')
+        print("  fieldbird-sim run --config run.yml")
         return 0
 
     return 1
