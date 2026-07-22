@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-07-22
+
+### Added
+- Automated smoke coverage on macOS and test coverage for Python 3.14.
+- Public-facing model-assumption and parameter-provenance guidance.
+- README status badges, an illustrative starter-run result, and additional package
+  metadata links.
+
+### Changed
+- User-facing console output, warnings, and plot labels are consistently English.
+- The package summary now describes the maintained simulator rather than its
+  historical implementation origin.
+
 ## [0.2.2] - 2026-07-22
 
 ### Added

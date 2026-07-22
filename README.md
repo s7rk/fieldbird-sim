@@ -1,5 +1,10 @@
 # fieldbird-sim
 
+[![CI](https://github.com/s7rk/fieldbird-sim/actions/workflows/ci.yml/badge.svg)](https://github.com/s7rk/fieldbird-sim/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/s7rk/fieldbird-sim)](https://github.com/s7rk/fieldbird-sim/releases/latest)
+[![Python 3.10–3.14](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/s7rk/fieldbird-sim/blob/main/LICENSE)
+
 `fieldbird-sim` is a configurable field-bird population simulator for synthetic or
 CSV-defined agricultural landscapes. The current model includes Skylark
 (`Feldlerche`) and Grey Partridge (`Rebhuhn`), configurable management scenarios,
@@ -12,13 +17,13 @@ hedges, and an optional weather-impact module.
 
 ## Start here
 
-New users should follow the [hands-on guide](docs/HANDS_ON_GUIDE.md). It covers
+New users should follow the [hands-on guide](https://github.com/s7rk/fieldbird-sim/blob/main/docs/HANDS_ON_GUIDE.md). It covers
 installation on macOS, Linux, and Windows; the first simulation; the generated
 files; a reproducible parameter experiment; and common errors.
 
 ## Quick start
 
-Python 3.10 or newer is required.
+Python 3.10 through 3.14 is supported.
 
 ```bash
 git clone https://github.com/s7rk/fieldbird-sim.git
@@ -50,6 +55,13 @@ command again. Existing starter files are never overwritten unless `--force` is
 passed to `fieldbird-sim init`. The generated `README.md` stays with the project and
 summarizes the next steps and most important result files.
 
+## Example output
+
+![Illustrative total bird abundance from the bundled two-year starter run](https://raw.githubusercontent.com/s7rk/fieldbird-sim/main/docs/images/quickstart-total-abundance.png)
+
+This figure is generated from the bundled demonstration defaults. It illustrates
+the output workflow and is not a calibrated population forecast.
+
 ## Run a repository preset
 
 From a source checkout, a short baseline run is available as:
@@ -59,8 +71,9 @@ fieldbird-sim run --config configs/run_20fields_quick.yml
 ```
 
 Additional presets cover longer runs, two-species runs, and CSV-defined landscapes.
-See the [hands-on guide](docs/HANDS_ON_GUIDE.md) for a complete first experiment and
-the [configuration guide](docs/CONFIGURATION.md) for the parameter reference.
+See the [hands-on guide](https://github.com/s7rk/fieldbird-sim/blob/main/docs/HANDS_ON_GUIDE.md)
+for a complete first experiment and the [configuration guide](https://github.com/s7rk/fieldbird-sim/blob/main/docs/CONFIGURATION.md)
+for the parameter reference.
 
 ## What can be configured?
 
@@ -82,6 +95,11 @@ configuration and the generated parameter CSV files together when sharing a run.
 The output directory contains data snapshots and diagnostics intended to make a run
 auditable. Each species directory also contains `run_meta.json` with the simulator,
 Python, platform, and runtime-dependency versions used for that run.
+
+The bundled defaults are model-development and demonstration parameters, not
+validated species-wide estimates. See [model assumptions and parameter
+provenance](https://github.com/s7rk/fieldbird-sim/blob/main/docs/MODEL_ASSUMPTIONS.md)
+before interpreting or adapting results.
 
 ## Optional weather input
 
@@ -105,8 +123,9 @@ python -m build
 The maintained package, active simulation core, tests, and scripts are linted.
 The active legacy modules have a narrow baseline for existing star-import and
 compact-statement patterns; all other Ruff checks remain enforced. See
-[Architecture](ARCHITECTURE.md), [Contributing](CONTRIBUTING.md), and the
-[optional analysis-script guide](scripts/README.md).
+[Architecture](https://github.com/s7rk/fieldbird-sim/blob/main/ARCHITECTURE.md),
+[Contributing](https://github.com/s7rk/fieldbird-sim/blob/main/CONTRIBUTING.md), and
+the [optional analysis-script guide](https://github.com/s7rk/fieldbird-sim/blob/main/scripts/README.md).
 
 ## Repository data policy
 
@@ -116,11 +135,13 @@ plots, model artifacts, and backups are not intended for version control.
 
 ## License and security
 
-The project is released under the [MIT License](LICENSE). Please report security
+The project is released under the [MIT License](https://github.com/s7rk/fieldbird-sim/blob/main/LICENSE). Please report security
 issues through a private GitHub security advisory as described in
-[SECURITY.md](SECURITY.md). Participation in the project is governed by the
-[Code of Conduct](CODE_OF_CONDUCT.md).
+[SECURITY.md](https://github.com/s7rk/fieldbird-sim/blob/main/SECURITY.md).
+Participation in the project is governed by the
+[Code of Conduct](https://github.com/s7rk/fieldbird-sim/blob/main/CODE_OF_CONDUCT.md).
 
-For research use, citation metadata is provided in [CITATION.cff](CITATION.cff).
-Maintainers can follow the [release checklist](docs/RELEASING.md) before publishing
-a version.
+For research use, citation metadata is provided in
+[CITATION.cff](https://github.com/s7rk/fieldbird-sim/blob/main/CITATION.cff).
+Maintainers can follow the [release checklist](https://github.com/s7rk/fieldbird-sim/blob/main/docs/RELEASING.md)
+before publishing a version.

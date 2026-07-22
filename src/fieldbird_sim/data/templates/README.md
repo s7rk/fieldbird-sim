@@ -37,5 +37,9 @@ For the full walkthrough and troubleshooting guide, see:
 
 https://github.com/s7rk/fieldbird-sim/blob/main/docs/HANDS_ON_GUIDE.md
 
+For the model assumptions and parameter-provenance guidance, see:
+
+https://github.com/s7rk/fieldbird-sim/blob/main/docs/MODEL_ASSUMPTIONS.md
+
 `fieldbird-sim` is research software. Treat outputs as simulation results, not as
 validated population forecasts without suitable calibration and uncertainty analysis.

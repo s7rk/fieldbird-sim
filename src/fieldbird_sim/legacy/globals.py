@@ -365,7 +365,7 @@ def _build_daily_full_df(
 
         rot_y = rotation_df.loc[rotation_df["year"] == int(year)]
         crop_map = {int(r.field_id): str(r.crop) for r in rot_y.itertuples(index=False)}
-        crops_vec = np.array([crop_map.get(int(fid), "Unbekannt") for fid in res_fids], dtype=object)
+        crops_vec = np.array([crop_map.get(int(fid), "Unknown") for fid in res_fids], dtype=object)
 
         mg_map = _build_management_map(int(year))
 
@@ -611,7 +611,7 @@ def save_run_bundle(
                 except Exception:
                     pass
 
-            print(f"[data] root snapshot geschrieben: {root_data_dir}")
+            print(f"[data] root snapshot written: {root_data_dir}")
         except Exception as exc:
             print(f"[warn] root data snapshot failed: {exc}")
 
@@ -674,7 +674,7 @@ def save_run_bundle(
         if daily_full_df is not None and len(daily_full_df) > 0:
             daily_path = outdir / "birdsim_daily_full.csv"
             daily_full_df.to_csv(daily_path, index=False)
-            print(f"[daily] gespeichert: {daily_path}")
+            print(f"[daily] saved: {daily_path}")
     except Exception as exc:
         print(f"[warn] daily full export failed: {exc}")
 
@@ -685,7 +685,7 @@ def save_run_bundle(
         from .layout import save_fields_layout_csv
         save_fields_layout_csv(fields_flat, analysis_dir, filename="fields_layout_realized.csv")
     except Exception as e:
-        print(f"[warn] Layout-Export fehlgeschlagen: {e}")
+        print(f"[warn] layout export failed: {e}")
 
 
 # =========================================================
@@ -805,7 +805,7 @@ def make_synthetic_fields(
 
     share_cover = gdf.loc[gdf["is_permanent_cover"], "area"].sum() / gdf["area"].sum()
     print(
-        f"[make_synthetic_fields] PermanentCover: {share_cover:.2%} der Fläche | "
+        f"[make_synthetic_fields] PermanentCover: {share_cover:.2%} of area | "
         f"Patches={gdf['is_permanent_cover'].sum()} (rim+residual)"
     )
     return gdf

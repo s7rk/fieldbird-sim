@@ -491,10 +491,10 @@ def save_fields_layout_csv(fields_df, out_dir: Path, filename: str = "fields_lay
     else:
         got = list(df.columns)
         raise ValueError(
-            "save_fields_layout_csv: unbekanntes Feldschema. "
-            "Erwartet eine der Varianten: "
-            "{x0,y0,x1,y1} ODER {x,y,w,h} ODER {x,y,width_m,height_m} ODER {geometry}. "
-            f"Vorhandene Spalten: {got}"
+            "save_fields_layout_csv: unknown field schema. "
+            "Expected one of: "
+            "{x0,y0,x1,y1} OR {x,y,w,h} OR {x,y,width_m,height_m} OR {geometry}. "
+            f"Available columns: {got}"
         )
 
     # Validierungen
@@ -513,8 +513,8 @@ def save_fields_layout_csv(fields_df, out_dir: Path, filename: str = "fields_lay
         # Zeige ein paar problematische Zeilen zur Diagnose
         sample = df.loc[bad, ["field_id", "x", "y", "width_m", "height_m"]].head(5)
         raise ValueError(
-            "save_fields_layout_csv: ungültige oder fehlende Werte in x/y/width_m/height_m "
-            f"({bad.sum()} Zeile(n)). Beispiel:\n{sample}"
+            "save_fields_layout_csv: invalid or missing values in x/y/width_m/height_m "
+            f"({bad.sum()} row(s)). Example:\n{sample}"
         )
 
     # Doppelte field_id vermeiden (letzten behalten)
@@ -618,7 +618,7 @@ def heatmap(N_mat, field_ids, title, vmax=None, savepath=None):
 
     N = np.asarray(N_mat)
     if N.ndim != 2:
-        raise ValueError("heatmap: N_mat muss 2D (days × fields) sein.")
+        raise ValueError("heatmap: N_mat must be 2D (days × fields).")
     days, F = N.shape
 
     fids = np.asarray(field_ids)
@@ -636,8 +636,8 @@ def heatmap(N_mat, field_ids, title, vmax=None, savepath=None):
     im = ax.imshow(N, aspect="auto", origin="lower", vmin=vmin, vmax=vmax, cmap="viridis")
 
     ax.set_title(title)
-    ax.set_ylabel("Tag (DOY)")
-    ax.set_xlabel("Felder (field_id)")
+    ax.set_ylabel("Day (DOY)")
+    ax.set_xlabel("Fields (field_id)")
 
     # X-Ticks: bei vielen Feldern ausdünnen
     if F <= 40:
@@ -650,7 +650,7 @@ def heatmap(N_mat, field_ids, title, vmax=None, savepath=None):
     ax.yaxis.set_major_locator(MaxNLocator(nbins=10, integer=True))
 
     cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label("Individuen")
+    cbar.set_label("Individuals")
 
     if savepath:
         p = Path(savepath)
@@ -662,7 +662,7 @@ def heatmap(N_mat, field_ids, title, vmax=None, savepath=None):
     plt.close(fig)
 
 def plot_map(fields_gdf, rotation_df, year: int,
-             hedges_gdf=None, title="Karte",
+             hedges_gdf=None, title="Map",
              draw_flower_rings=True, draw_hedge_buffers=True, hedge_buffer_m=5.0,
              day_vals=None, usage_vals=None, savepath=None):
     import numpy as np
@@ -687,13 +687,13 @@ def plot_map(fields_gdf, rotation_df, year: int,
     # --- Kultur pro Feld (Jahr) ---
     rot_y = rotation_df[rotation_df["year"] == year]
     crops_map = dict(zip(rot_y["field_id"].astype(int), rot_y["crop"].astype(str)))
-    fg["crop"] = fg["field_id"].astype(int).map(crops_map).fillna("Unbekannt")
+    fg["crop"] = fg["field_id"].astype(int).map(crops_map).fillna("Unknown")
 
     # --- Farbpalette (bekannte + Fallback für Unbekannte) ---
     base_palette = {
         "Winterweizen": "#9ecae1", "Sommergerste": "#c7e9c0", "Mais": "#fff7bc",
         "Raps": "#fdd0a2", "Zuckerrübe": "#c994c7", "Ackerbohne": "#a1d99b",
-        "Brache": "#d9d9d9", "Unbekannt": "#f0f0f0"
+        "Brache": "#d9d9d9", "Unknown": "#f0f0f0"
     }
     unique_crops = list(pd.unique(fg["crop"]))
     fallback_colors = plt.cm.tab20.colors
@@ -792,7 +792,7 @@ def plot_map(fields_gdf, rotation_df, year: int,
                         x, y = gg.exterior.xy
                         ax.fill(x, y, facecolor="#a1d99b", edgecolor="none", alpha=0.35, hatch="xx", zorder=4)
             except Exception as e:
-                print("Hedge buffer zeichnen fehlgeschlagen:", e)
+                print("Drawing the hedge buffer failed:", e)
 
     # --------- Dichteoverlay (Tag / Usage) ---------
     vals, label = None, None
@@ -802,7 +802,7 @@ def plot_map(fields_gdf, rotation_df, year: int,
         if isinstance(raw, dict):
             m = {int(k): float(v) for k, v in raw.items()}
             vals = fg["field_id"].astype(int).map(m).astype(float).to_numpy()
-            label = "Vögel (Tag)" if day_vals is not None else "Vögel (Usage)"
+            label = "Birds (day)" if day_vals is not None else "Birds (usage)"
         elif isinstance(raw, pd.Series):
             s = raw.copy()
             try:
@@ -810,10 +810,10 @@ def plot_map(fields_gdf, rotation_df, year: int,
                 vals = fg["field_id"].astype(int).map(s).astype(float).to_numpy()
             except Exception:
                 vals = np.asarray(s.values, dtype=float)
-            label = "Vögel (Tag)" if day_vals is not None else "Vögel (Usage)"
+            label = "Birds (day)" if day_vals is not None else "Birds (usage)"
         else:
             vals = np.asarray(raw, dtype=float)
-            label = "Vögel (Tag)" if day_vals is not None else "Vögel (Usage)"
+            label = "Birds (day)" if day_vals is not None else "Birds (usage)"
 
     if vals is not None:
         if len(vals) != len(fg):
@@ -876,8 +876,8 @@ def plot_map(fields_gdf, rotation_df, year: int,
         top_items = list(crops_present.index[:10])
         handles = [Patch(facecolor=pal[c], edgecolor="black", label=f"{c} ({crops_present[c]})") for c in top_items]
         if len(crops_present) > 10:
-            handles.append(Patch(facecolor="#dddddd", edgecolor="black", label=f"+{len(crops_present)-10} weitere"))
-        ax.legend(handles=handles, title="Kulturen", loc="upper right", frameon=True, fontsize=8)
+            handles.append(Patch(facecolor="#dddddd", edgecolor="black", label=f"+{len(crops_present)-10} more"))
+        ax.legend(handles=handles, title="Crops", loc="upper right", frameon=True, fontsize=8)
     except Exception:
         pass
 

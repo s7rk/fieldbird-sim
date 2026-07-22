@@ -506,7 +506,7 @@ class BirdLandscapeSim:
         rot_y = self.rotation[self.rotation["year"] == int(year)]
         crop_map = dict(zip(rot_y["field_id"].astype(int), rot_y["crop"].astype(str)))
         fids = self.fields["field_id"].astype(int).to_numpy()
-        crops = np.array([crop_map.get(int(fid), "Unbekannt") for fid in fids], dtype=object)
+        crops = np.array([crop_map.get(int(fid), "Unknown") for fid in fids], dtype=object)
 
         effect_crops = set(getattr(self.skylark_cfg, "effect_crops", []))
         if effect_crops:
