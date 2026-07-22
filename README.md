@@ -1,7 +1,7 @@
 # fieldbird-sim
 
 [![CI](https://github.com/s7rk/fieldbird-sim/actions/workflows/ci.yml/badge.svg)](https://github.com/s7rk/fieldbird-sim/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/s7rk/fieldbird-sim)](https://github.com/s7rk/fieldbird-sim/releases/latest)
+[![Version 0.2.3](https://img.shields.io/badge/version-0.2.3-blue)](https://github.com/s7rk/fieldbird-sim/releases/tag/v0.2.3)
 [![Python 3.10–3.14](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/s7rk/fieldbird-sim/blob/main/LICENSE)
 
@@ -54,13 +54,6 @@ Edit these files with a text editor or spreadsheet application, then run the sam
 command again. Existing starter files are never overwritten unless `--force` is
 passed to `fieldbird-sim init`. The generated `README.md` stays with the project and
 summarizes the next steps and most important result files.
-
-## Example output
-
-![Illustrative total bird abundance from the bundled two-year starter run](https://raw.githubusercontent.com/s7rk/fieldbird-sim/main/docs/images/quickstart-total-abundance.png)
-
-This figure is generated from the bundled demonstration defaults. It illustrates
-the output workflow and is not a calibrated population forecast.
 
 ## Run a repository preset
 
