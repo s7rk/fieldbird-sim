@@ -80,7 +80,6 @@ jobs:
     runs-on: windows-latest
     env:
       MPLBACKEND: Agg
-      MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
 
     steps:
       - name: Checkout
@@ -98,6 +97,8 @@ jobs:
 
       - name: Run installed starter project outside checkout
         shell: pwsh
+        env:
+          MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
         run: |
           $project = Join-Path $env:RUNNER_TEMP "fieldbird-windows-smoke"
           fieldbird-sim --version
