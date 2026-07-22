@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-22
+
 ### Added
 - `fieldbird-sim init` for creating a self-contained editable starter project.
 - Bundled crop-calendar and species defaults in built distributions.
