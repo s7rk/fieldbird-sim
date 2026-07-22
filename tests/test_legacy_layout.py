@@ -76,9 +76,9 @@ def test_shared_edges_and_layout_csv_exports(tmp_path) -> None:
 
     geom_target = layout.save_fields_layout_csv(fields, tmp_path, "geometry_layout.csv")
     assert pd.read_csv(geom_target)["width_m"].tolist() == [10.0, 10.0]
-    with pytest.raises(ValueError, match="unbekanntes Feldschema"):
+    with pytest.raises(ValueError, match="unknown field schema"):
         layout.save_fields_layout_csv(pd.DataFrame({"field_id": [1]}), tmp_path, "invalid.csv")
-    with pytest.raises(ValueError, match="ungültige"):
+    with pytest.raises(ValueError, match="invalid or missing"):
         layout.save_fields_layout_csv(
             pd.DataFrame({"x": [0], "y": [0], "width_m": [0], "height_m": [2]}),
             tmp_path,

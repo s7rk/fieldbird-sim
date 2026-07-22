@@ -74,8 +74,10 @@ survival, reproduction, density dependence, hedge effects, and territory size.
 `species_<name>_pref.csv` contains crop-specific food, cover, disturbance, and
 clutch-window weights.
 
-These are research parameters. Record and review changes carefully because they can
-materially affect population trajectories.
+These are research parameters. The bundled values are model-development defaults,
+not validated species-wide estimates. Record and review changes carefully because
+they can materially affect population trajectories. See [model assumptions and
+parameter provenance](MODEL_ASSUMPTIONS.md) for the interpretation requirements.
 
 ## Scenarios
 

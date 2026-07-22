@@ -18,7 +18,7 @@ than a minute on a current desktop computer.
 
 ## 1. Prerequisites
 
-- Python 3.10, 3.11, 3.12, or 3.13
+- Python 3.10, 3.11, 3.12, 3.13, or 3.14
 - about 1 GB of free disk space for Python dependencies and generated results
 - Git, if you install from a repository checkout
 
@@ -65,7 +65,7 @@ and then activate again:
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
-A successful installation prints `fieldbird-sim 0.2.2` or a newer version. Keep the
+A successful installation prints `fieldbird-sim 0.2.3` or a newer version. Keep the
 environment activated while using the program. Later, reactivate it with
 `source .venv/bin/activate` on macOS/Linux or `.\.venv\Scripts\Activate.ps1` on
 Windows.
@@ -78,11 +78,11 @@ page. Create and activate a virtual environment as shown above, open a terminal 
 the download directory, and install the downloaded file:
 
 ```bash
-python -m pip install fieldbird_sim-0.2.2-py3-none-any.whl
+python -m pip install fieldbird_sim-0.2.3-py3-none-any.whl
 fieldbird-sim --version
 ```
 
-Replace `0.2.2` with the downloaded version. The wheel contains the starter
+Replace `0.2.3` with the downloaded version. The wheel contains the starter
 configuration and editable parameter files; Git is not required for this route.
 
 ## 3. Create your simulation project
@@ -221,7 +221,9 @@ Good first parameters in `run.yml` are:
 Species CSVs contain more sensitive model parameters such as breeding windows,
 movement radius, survival, clutch size, fledging rate, density dependence, and
 territory size. Crop-preference CSVs control food, cover, disturbance, and clutch
-weights by crop. Change these only with a documented biological rationale.
+weights by crop. The bundled values are demonstration defaults rather than validated
+species-wide estimates. Change them only with a documented biological rationale and
+review the [model assumptions and parameter provenance](MODEL_ASSUMPTIONS.md).
 
 See the [configuration guide](CONFIGURATION.md) for the complete YAML wiring and
 examples.

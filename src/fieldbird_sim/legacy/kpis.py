@@ -1127,7 +1127,7 @@ def run(*, cfg) -> None:
                     heatmap(
                         res_years[y]["N_total"],
                         fids,
-                        f"{sp_cfg.name} – Heatmap Gesamt – {scen_name} – Jahr {y}",
+                        f"{sp_cfg.name} – Total heatmap – {scen_name} – Year {y}",
                         vmax=vmax,
                         savepath=sp_outdir / f"plots/heatmap_year{y}.png",
                     )
@@ -1144,7 +1144,7 @@ def run(*, cfg) -> None:
                         rot_sc,
                         year=yshow,
                         hedges_gdf=hedges_sc,
-                        title=f"{sp_cfg.name} – {scen_name} – Jahr {yshow}, Tag {DAY_TO_SHOW}",
+                        title=f"{sp_cfg.name} – {scen_name} – Year {yshow}, Day {DAY_TO_SHOW}",
                         draw_flower_rings=DRAW_FLOWER_RINGS,
                         draw_hedge_buffers=DRAW_HEDGE_BUFFERS,
                         hedge_buffer_m=HEDGE_BUFFER_M,
@@ -1158,7 +1158,7 @@ def run(*, cfg) -> None:
                             rot_sc,
                             year=yshow,
                             hedges_gdf=hedges_sc,
-                            title=f"{sp_cfg.name} – {scen_name} – Jahr {yshow}: Usage (Jahressumme)",
+                            title=f"{sp_cfg.name} – {scen_name} – Year {yshow}: Usage (annual total)",
                             draw_flower_rings=DRAW_FLOWER_RINGS,
                             draw_hedge_buffers=DRAW_HEDGE_BUFFERS,
                             hedge_buffer_m=HEDGE_BUFFER_M,
@@ -1172,7 +1172,7 @@ def run(*, cfg) -> None:
                 sp_cfg,
                 output_path=sp_outdir / "analysis" / "kpi_yearly.csv",
             )
-            print("\n[KPI] Jahres-Kennzahlen:\n", kpi_df)
+            print("\n[KPI] Annual metrics:\n", kpi_df)
 
             # store baseline for later delta step
             if scen_kind == "baseline":
