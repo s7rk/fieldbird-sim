@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-22
+
 ### Added
 - A complete hands-on guide covering installation, first use, parameter experiments,
   results, reproducibility, and troubleshooting.
@@ -22,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Removed unreachable legacy scenario code that could no longer be executed.
+- Updated GitHub Actions to Node.js 24-based checkout and Python setup releases.
 
 ## [0.2.0] - 2026-07-22
 
