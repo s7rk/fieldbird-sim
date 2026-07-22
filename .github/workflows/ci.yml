@@ -114,7 +114,7 @@ jobs:
     runs-on: macos-latest
     env:
       MPLBACKEND: Agg
-      MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
+      MPLCONFIGDIR: /tmp/matplotlib
 
     steps:
       - name: Checkout
