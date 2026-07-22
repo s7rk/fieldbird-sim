@@ -10,6 +10,12 @@ hedges, and an optional weather-impact module.
 > interpreted as a validated population forecast without an application-specific
 > calibration and uncertainty assessment.
 
+## Start here
+
+New users should follow the [hands-on guide](docs/HANDS_ON_GUIDE.md). It covers
+installation on macOS, Linux, and Windows; the first simulation; the generated
+files; a reproducible parameter experiment; and common errors.
+
 ## Quick start
 
 Python 3.10 or newer is required.
@@ -41,7 +47,8 @@ Results are written to `outputs/my_simulation/`. The generated directory contain
 
 Edit these files with a text editor or spreadsheet application, then run the same
 command again. Existing starter files are never overwritten unless `--force` is
-passed to `fieldbird-sim init`.
+passed to `fieldbird-sim init`. The generated `README.md` stays with the project and
+summarizes the next steps and most important result files.
 
 ## Run a repository preset
 
@@ -52,7 +59,8 @@ fieldbird-sim run --config configs/run_20fields_quick.yml
 ```
 
 Additional presets cover longer runs, two-species runs, and CSV-defined landscapes.
-See [Configuration](docs/CONFIGURATION.md) for the parameter reference and examples.
+See the [hands-on guide](docs/HANDS_ON_GUIDE.md) for a complete first experiment and
+the [configuration guide](docs/CONFIGURATION.md) for the parameter reference.
 
 ## What can be configured?
 

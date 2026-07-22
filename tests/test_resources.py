@@ -69,11 +69,13 @@ def test_cli_init_creates_editable_starter_project(tmp_path, capsys):
     target = tmp_path / "my-simulation"
 
     assert cli.main(["init", str(target)]) == 0
+    assert (target / "README.md").is_file()
     assert (target / "run.yml").is_file()
     assert (target / "crop_calendar.csv").is_file()
     assert (target / "species_Feldlerche.csv").is_file()
     assert (target / "species_Rebhuhn_pref.csv").is_file()
     assert "fieldbird-sim run --config run.yml" in capsys.readouterr().out
+    assert "First run" in (target / "README.md").read_text(encoding="utf-8")
 
     assert cli.main(["init", str(target)]) == 2
     assert "Refusing to overwrite" in capsys.readouterr().err

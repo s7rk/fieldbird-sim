@@ -20,7 +20,10 @@ def choose_flower_target_fields(
     seed: int = 2025
 ) -> list[int]:
     """Wählt Feld-IDs für Blühstreifen aus."""
-    F = fields_df[["field_id", "flower_strip_share"]].copy()
+    columns = ["field_id"]
+    if "flower_strip_share" in fields_df.columns:
+        columns.append("flower_strip_share")
+    F = fields_df[columns].copy()
     if "flower_strip_share" not in F.columns:
         F["flower_strip_share"] = 0.0
     F["flower_strip_share"] = F["flower_strip_share"].fillna(0.0)
@@ -110,7 +113,10 @@ def choose_skylark_target_fields(
                  .sum()
                  .rename(columns={"eligible": "eligible_years"}))
 
-    F = fields_df[["field_id", "flower_strip_share"]].copy()
+    columns = ["field_id"]
+    if "flower_strip_share" in fields_df.columns:
+        columns.append("flower_strip_share")
+    F = fields_df[columns].copy()
     if "flower_strip_share" not in F.columns:
         F["flower_strip_share"] = 0.0
     F["flower_strip_share"] = F["flower_strip_share"].fillna(0.0)
@@ -435,81 +441,6 @@ def apply_fallow_scenario(fields_df: pd.DataFrame,
 
     print(f"[Scenario C] Ziel={share * 100:.1f}% Fläche | tatsächlich={actual_share * 100:.2f}% | Felder={len(chosen_ids)}")
     return r2, m2, chosen_ids, actual_share
-
-
-    # ---------- Blühstreifen (gezielt oder flächig) ----------
-    if add_flower_strip != 0.0:
-        if "flower_strip_share" not in f2.columns:
-            f2["flower_strip_share"] = 0.0
-
-        # Zielmenge bestimmen: explizite IDs > Fraktion > alle
-        if flower_target_field_ids is not None and len(flower_target_field_ids) > 0:
-            target_idx = f2.index[f2["field_id"].isin(list(flower_target_field_ids))].to_numpy()
-        elif flower_fraction is None:
-            target_idx = f2.index.to_numpy()
-        else:
-            frac = max(0.0, min(1.0, float(flower_fraction)))
-            k = int(round(frac * len(f2)))
-            rng = np.random.default_rng(int(flower_seed))
-            target_idx = rng.choice(f2.index.to_numpy(), size=k, replace=False) if k > 0 else np.array([], dtype=int)
-
-        if len(target_idx) > 0:
-            f2.loc[target_idx, "flower_strip_share"] = (
-                    f2.loc[target_idx, "flower_strip_share"].fillna(0.0) + float(add_flower_strip)
-            ).clip(0.0, 0.5)
-
-    # ---------- Lerchenfenster (wie gehabt, optional gezielt per skylark_fraction/IDs) ----------
-    if add_skylark_plots != 0:
-        if "skylark_plots" not in f2.columns:
-            f2["skylark_plots"] = 0
-        if "skylark_plot_area" not in f2.columns:
-            f2["skylark_plot_area"] = 0.0
-
-        f2["skylark_plots"] = f2["skylark_plots"].fillna(0).astype(int)
-        f2["skylark_plot_area"] = f2["skylark_plot_area"].fillna(0.0).astype(float)
-
-        idx_all = f2.index.to_numpy()
-
-        # --- NEU: explizite Zielfelder per field_id (hat Priorität) ---
-        if skylark_target_field_ids:
-            chosen_idx = f2.index[f2["field_id"].isin(skylark_target_field_ids)].to_numpy()
-        else:
-            # Fallback: Zufallsauswahl per Anteil
-            if skylark_fraction is None:
-                chosen_idx = idx_all
-            else:
-                frac = max(0.0, min(1.0, float(skylark_fraction)))
-                k = int(round(frac * len(idx_all)))
-                rng = np.random.default_rng(int(skylark_seed))
-                chosen_idx = rng.choice(idx_all, size=k, replace=False) if k > 0 else np.array([], dtype=int)
-
-        if len(chosen_idx) > 0:
-            f2.loc[chosen_idx, "skylark_plots"] = f2.loc[chosen_idx, "skylark_plots"] + int(add_skylark_plots)
-            if skylark_plot_area is not None:
-                f2.loc[chosen_idx, "skylark_plot_area"] = np.maximum(
-                    f2.loc[chosen_idx, "skylark_plot_area"], float(skylark_plot_area)
-                )
-
-    # ---------- Ernte verschieben (robust, clamped) ----------
-    if int(harvest_shift_days) != 0:
-        dh = int(harvest_shift_days)
-
-        if "harvest_date" in m2.columns:
-            def _shift_day(x):
-                if pd.isna(x) or str(x).strip() == "":
-                    return x
-                try:
-                    v = int(float(x)) + dh
-                    return int(np.clip(v, 1, 365))
-                except Exception:
-                    return x
-
-            m2["harvest_date"] = m2["harvest_date"].apply(_shift_day)
-
-        if "harvest_win" in m2.columns:
-            m2["harvest_win"] = m2["harvest_win"].apply(lambda s: shift_window_str(s, dh))
-
-    return f2, m2
 
 
 def usage_compare(field_ids, usage_base, usage_scen, label, saveprefix=None):
