@@ -48,7 +48,10 @@ dev = [
   "pre-commit",
   "pytest",
   "pytest-cov",
-  "ruff",
+  # Keep CI and local linting reproducible. New Ruff releases can enable
+  # additional rules, which must be adopted deliberately rather than breaking
+  # unrelated dependency-update pull requests.
+  "ruff==0.14.14",
 ]
 # Backward-compatible aliases (runtime deps are already part of base install)
 geo = [
